@@ -2,6 +2,8 @@
 import matplotlib.pyplot as pyplot
 import pandas as pd
 from sklearn.metrics import f1_score
+from sklearn.model_selection import train_test_split
+from features.num_like import num_like_feature
 
 def preprocessing(sentence: str):
     ''' 
@@ -16,11 +18,12 @@ def preprocessing(sentence: str):
     '''
     return sentence
 
-def feature_engineering(X_train: pd.Series):
+def feature_engineering(data: pd.DataFrame):
     '''
     Flags to be written here
     n_gram_feature: bool = False
     '''
+    num_like: bool = False
     ''' 
     Format:
     from features.ngram import ngram_feature
@@ -30,9 +33,11 @@ def feature_engineering(X_train: pd.Series):
     Write your functions in separate python files in folder features and import them here to use, eg in features/ngram.py
     '''
     features: pd.DataFrame = pd.DataFrame()
+    if num_like:
+        features = pd.concat([features, num_like_feature(data)], axis=1)
     return features
 
-def train_model(model, X_train_features: pd.DataFrame, y_train: pd.Series):
+def train_model(model, train_features: pd.DataFrame, validation_features: pd.DataFrame):
     '''
     Flags to be written here
     n_gram_model: bool = False
@@ -73,37 +78,35 @@ def generate_result(test: pd.DataFrame, y_pred: pd.Series, filename: str):
 
 def main():
     ''' load train, val, and test data '''
-    # split data into train, validation, test set
-    train: pd.DataFrame = pd.read_csv('train.csv')
-    test: pd.DataFrame = pd.read_csv('test.csv')
-    
-    X_train: pd.Series = train['Text']
-    X_test: pd.Series = test['Text']
-    # pre-processing
-    X_train = X_train.apply(preprocessing)
-    X_test = X_test.apply(preprocessing)
-    # features
-    features: pd.DataFrame = feature_engineering(X_train.append(X_test, ignore_index=True))
-    X_train_features: pd.DataFrame = features[:X_train.size]
-    X_test_features: pd.DataFrame = features[X_train.size:]
-    
-    y_train: pd.Series = train['Verdict']
+    train: pd.DataFrame = pd.read_csv('v2.csv')
 
+    # pre-processing
+    train['post_text'] = train['post_text'].apply(preprocessing)
+
+    # split data into train, validation, test set
+    train, validation = train_test_split(train, test_size=0.2, random_state=10)
+    test, validation = train_test_split(validation, test_size=0.5, random_state=10)
+    
+    # features
+    train_features: pd.DataFrame = feature_engineering(train)
+    validation_features: pd.DataFrame = feature_engineering(validation)
+    test_features: pd.DataFrame = feature_engineering(test)
+    
     # The following was used when reloading the model to further train
     # model = load_model('my_model')
     # GoEmotions pre-trained model can be imported here
     model = None
 
-    model = train_model(model, X_train_features, y_train)
+    model = train_model(model, train_features, validation_features)
     # test your model
-    y_pred: pd.Series = predict(model, X_train_features)
+    y_pred: pd.Series = predict(model, train_features)
 
     # Use f1-macro as the metric
-    score: float = f1_score(y_train, y_pred, average='macro')
-    print('score on validation = {}'.format(score))
+    # score: float = f1_score(y_train, y_pred, average='macro')
+    # print('score on validation = {}'.format(score))
 
     # generate prediction on test data
-    y_pred: pd.Series = predict(model, X_test_features)
+    y_pred: pd.Series = predict(model, test_features)
     generate_result(test, y_pred, "result.csv")
 
 # Allow the main class to be invoked if run as a file.
