@@ -6,6 +6,10 @@ from sklearn.model_selection import train_test_split
 from features.num_like import num_like_feature
 from features.singlish import singlish_feature
 from preprocessing.remove_digit import remove_digit_preprocessing
+from preprocessing.remove_link import remove_link_preprocessing
+from preprocessing.remove_newline import remove_newline_preprocessing
+from preprocessing.remove_non_english import remove_non_english_preprocessing
+from preprocessing.lemmatization import lemmatization_preprocessing
 
 def preprocessing(sentence: str):
     ''' 
@@ -19,8 +23,26 @@ def preprocessing(sentence: str):
     Can write the functions in a separate file, import and execute here / or just write here since we didn't split this job
     '''
     remove_digit: bool = False
+    remove_link: bool = False
+    remove_newline: bool = False
+    remove_non_english: bool = False
+    lemmatization: bool = False
+
     if remove_digit:
         sentence = remove_digit_preprocessing(sentence)
+
+    if remove_link:
+        sentence = remove_link_preprocessing(sentence)
+
+    if remove_newline:
+        sentence = remove_newline_preprocessing(sentence)
+
+    if remove_non_english:
+        sentence = remove_non_english_preprocessing(sentence)
+
+    if lemmatization:
+        sentence = lemmatization_preprocessing(sentence)
+
     return sentence
 
 def feature_engineering(data: pd.DataFrame):
