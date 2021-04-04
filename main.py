@@ -86,8 +86,9 @@ def generate_result(test: pd.DataFrame, y_pred: pd.Series, filename: str):
 
 def main():
     ''' load train, val, and test data '''
-    train: pd.DataFrame = pd.read_csv('v2.csv')
-
+    train: pd.DataFrame = pd.read_csv('v4.csv')
+    train.drop(train['text'].str.len == 0)
+    
     # pre-processing
     train['text'] = train['text'].apply(preprocessing)
 
