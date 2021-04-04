@@ -4,6 +4,8 @@ import pandas as pd
 from sklearn.metrics import f1_score
 from sklearn.model_selection import train_test_split
 from features.num_like import num_like_feature
+from features.singlish import singlish_feature
+from preprocessing.remove_digit import remove_digit_preprocessing
 
 def preprocessing(sentence: str):
     ''' 
@@ -16,6 +18,9 @@ def preprocessing(sentence: str):
     
     Can write the functions in a separate file, import and execute here / or just write here since we didn't split this job
     '''
+    remove_digit: bool = False
+    if remove_digit:
+        sentence = remove_digit_preprocessing(sentence)
     return sentence
 
 def feature_engineering(data: pd.DataFrame):
@@ -24,6 +29,7 @@ def feature_engineering(data: pd.DataFrame):
     n_gram_feature: bool = False
     '''
     num_like: bool = False
+    singlish: bool = False
     ''' 
     Format:
     from features.ngram import ngram_feature
@@ -35,6 +41,8 @@ def feature_engineering(data: pd.DataFrame):
     features: pd.DataFrame = pd.DataFrame()
     if num_like:
         features = pd.concat([features, num_like_feature(data)], axis=1)
+    if singlish:
+        features = pd.concat([features, singlish_feature(data['text'])], axis=1)
     return features
 
 def train_model(model, train_features: pd.DataFrame, validation_features: pd.DataFrame):
@@ -81,7 +89,7 @@ def main():
     train: pd.DataFrame = pd.read_csv('v2.csv')
 
     # pre-processing
-    train['post_text'] = train['post_text'].apply(preprocessing)
+    train['text'] = train['text'].apply(preprocessing)
 
     # split data into train, validation, test set
     train, validation = train_test_split(train, test_size=0.2, random_state=10)
