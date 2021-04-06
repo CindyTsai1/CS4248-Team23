@@ -3,10 +3,13 @@ import matplotlib.pyplot as pyplot
 import pandas as pd
 from sklearn.metrics import f1_score
 from sklearn.model_selection import train_test_split
+from pycontractions import Contractions
 from features.num_like import num_like_feature
 from features.singlish import singlish_feature
 from preprocessing.remove_digit import remove_digit_preprocessing
+from preprocessing.expand_contraction import expand_contraction_preprocessing
 
+cont: Contractions = Contractions('/Users/yuwen/Desktop/NUS/Year5Sem2/CS4248/Project/CS4248-Team23/preprocessing/GoogleNews-vectors-negative300.bin.gz')
 def preprocessing(sentence: str):
     ''' 
     takes in a row of data, preprocess it, return the processed row.
@@ -19,8 +22,11 @@ def preprocessing(sentence: str):
     Can write the functions in a separate file, import and execute here / or just write here since we didn't split this job
     '''
     remove_digit: bool = False
+    expand_contraction: bool = False
     if remove_digit:
         sentence = remove_digit_preprocessing(sentence)
+    if expand_contraction:
+        sentence = expand_contraction_preprocessing(sentence, cont)
     return sentence
 
 def feature_engineering(data: pd.DataFrame):
@@ -90,6 +96,7 @@ def main():
     train.drop(train['text'].str.len == 0)
     
     # pre-processing
+    cont.load_models()
     train['text'] = train['text'].apply(preprocessing)
 
     # split data into train, validation, test set
