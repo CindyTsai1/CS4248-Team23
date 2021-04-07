@@ -47,11 +47,11 @@ def preprocessing(sentence: str):
     if remove_non_english:
         sentence = remove_non_english_preprocessing(sentence)
 
-    if expand_contraction:
-        sentence = expand_contraction_preprocessing(sentence, cont)
-
     if correct_spelling:
         sentence = correct_spelling_preprocessing(sentence)
+        
+    if expand_contraction:
+        sentence = expand_contraction_preprocessing(sentence, cont)
 
     if replace_short_form_slang:
         sentence = expand_short_form_preprocessing(sentence, short_form_dict)
