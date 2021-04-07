@@ -7,6 +7,7 @@ from pycontractions import Contractions
 import csv
 from features.num_like import num_like_feature
 from features.singlish import singlish_feature
+from features.ngram import ngram_feature
 from preprocessing.remove_digit import remove_digit_preprocessing
 from preprocessing.expand_contraction import expand_contraction_preprocessing
 from preprocessing.correct_spelling import correct_spelling_preprocessing
@@ -86,6 +87,22 @@ def feature_engineering(data: pd.DataFrame):
         features = pd.concat([features, singlish_feature(data['text'])], axis=1)
     return features
 
+def feature_engineering2(X_train: pd.DataFrame, X_validation: pd.DataFrame, X_test: pd.DataFrame):
+    X_train = feature_engineering(X_train)
+    X_validation = feature_engineering(X_validation)
+    X_test = feature_engineering(X_test)
+
+    n_gram_feature: bool = False
+
+    if n_gram_feature:
+        X_train_tfidf, X_validation_tfidf, X_test_tfidf = ngram_feature(X_train, X_validation, X_test)
+        X_train = sp.sparse.hstack((X_train_tfidf, X_train)) 
+        X_validation = sp.sparse.hstack((X_validation_tfidf, X_validation)) 
+        X_test = sp.sparse.hstack((X_test_tfidf, X_test)) 
+    
+    return X_train, X_validation, X_test
+   
+
 def train_model(model, train_features: pd.DataFrame, validation_features: pd.DataFrame):
     '''
     Flags to be written here
@@ -129,6 +146,7 @@ def main():
     ''' load train, val, and test data '''
     train: pd.DataFrame = pd.read_csv('v4.csv')
     train.drop(train['text'].str.len == 0)
+    # data = data.dropna(axis = 0, subset=['text'], inplace=False)
     
     # pre-processing
     cont.load_models()
@@ -139,9 +157,10 @@ def main():
     test, validation = train_test_split(validation, test_size=0.5, random_state=10)
     
     # features
-    train_features: pd.DataFrame = feature_engineering(train)
-    validation_features: pd.DataFrame = feature_engineering(validation)
-    test_features: pd.DataFrame = feature_engineering(test)
+    # train_features: pd.DataFrame = feature_engineering(train)
+    # validation_features: pd.DataFrame = feature_engineering(validation)
+    # test_features: pd.DataFrame = feature_engineering(test)
+    train_features, validation_features, test_features = feature_engineering2(train, validation, test)
     
     # The following was used when reloading the model to further train
     # model = load_model('my_model')
