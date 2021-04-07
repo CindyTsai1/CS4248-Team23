@@ -16,7 +16,7 @@ from preprocessing.remove_newline import remove_newline_preprocessing
 from preprocessing.remove_non_english import remove_non_english_preprocessing
 from preprocessing.lemmatization import lemmatization_preprocessing
 
-cont: Contractions = Contractions('/Users/yuwen/Desktop/NUS/Year5Sem2/CS4248/Project/CS4248-Team23/preprocessing/GoogleNews-vectors-negative300.bin.gz')
+cont: Contractions = Contractions('/Users/yuwen/Desktop/NUS/Year5Sem2/CS4248/Project/GoogleNews-vectors-negative300.bin.gz')
 with open('/Users/yuwen/Desktop/NUS/Year5Sem2/CS4248/Project/CS4248-Team23/preprocessing/slang.txt', 'r') as myCSVfile:
     short_form_dict:dict = dict([pair for pair in csv.reader(myCSVfile, delimiter="=")])
 def preprocessing(sentence: str):
@@ -49,7 +49,7 @@ def preprocessing(sentence: str):
 
     if correct_spelling:
         sentence = correct_spelling_preprocessing(sentence)
-        
+
     if expand_contraction:
         sentence = expand_contraction_preprocessing(sentence, cont)
 
