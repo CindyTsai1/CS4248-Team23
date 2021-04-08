@@ -65,7 +65,7 @@ def preprocessing(sentence: str, flags: list):
     if expand_contraction:
         sentence = expand_contraction_preprocessing(sentence, cont)
         print(sentence.split()[0])
-    '''
+    
     if remove_punctuation:
         sentence = ' '.join(punctuation_removal(sentence.split()))
 
@@ -86,7 +86,7 @@ def preprocessing(sentence: str, flags: list):
 
     if remove_stopwords:
         sentence = ' '.join(stopwords_removal(sentence.split()))
-    
+    '''
     if lemmatization:
         sentence = lemmatization_preprocessing(sentence)
 
@@ -188,7 +188,7 @@ def generate_result(test: pd.DataFrame, y_pred: pd.Series, filename: str):
 
 def main():
     ''' load train, val, and test data '''
-    old_train: pd.DataFrame = pd.read_csv('Project/CS4248-Team23/data/v6_.csv')
+    old_train: pd.DataFrame = pd.read_csv('Project/CS4248-Team23/data/v6_remove_punctuation_remove_non_english_correct_spelling_remove_stopwords.csv')
     old_train = old_train.dropna(axis = 0, subset=['text'], inplace=False)
     label: pd.Series = old_train['label']
     train: pd.DataFrame = deepcopy(old_train)
@@ -198,7 +198,7 @@ def main():
     #cont.load_models()
     print("loaded contraction model")
     scores: pd.DataFrame = pd.DataFrame(pd.read_csv('Project/CS4248-Team23/preprocessing/scores.csv'), columns=flag_names+["training_score","test_score"])
-    flags = [False,True,False,True,False,True,False,False,False,False,False]
+    flags = [False,True,False,True,False,True,False,False,True,True,False]
     # pre-processing
     print("start preprocessing")
     train['text'] = old_train['text'].copy()
