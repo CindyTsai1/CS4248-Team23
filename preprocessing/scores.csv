@@ -1,0 +1,16 @@
+lowercased,remove_punctuation,remove_newline,remove_non_english,remove_digit,correct_spelling,expand_contraction,replace_short_form_slang,remove_stopwords,lemmatization,stemming,training_score,test_score
+False,False,False,False,False,False,False,False,False,False,False,0.4400147206331247,0.2167653791405378
+True,False,False,False,False,False,False,False,False,False,False,0.4400147206331247,0.2167653791405378
+False,True,False,False,False,False,False,False,False,False,False,0.4396524552070445,0.2287259408856817
+False,False,False,False,False,False,True,False,False,False,False,0.4416143077354307,0.1902993085189626
+False,True,False,False,False,False,True,False,False,False,False,0.443516479426966,0.1546877621202625
+False,True,True,False,False,False,True,False,False,False,False,0.443516479426966,0.1546877621202625
+False,True,False,True,False,False,True,False,False,False,False,0.443516479426966,0.1490296910184089
+False,True,False,False,True,False,True,False,False,False,False,0.4437147447728619,0.1747965188862113
+False,False,False,False,False,True,True,False,False,False,False,0.4402394274284583,0.1643898668956633
+False,True,False,False,True,False,True,True,False,False,False,0.4375393927213641,0.1533524730028041
+False,True,False,False,True,False,True,False,True,False,False,0.47546178525314,0.1887373663451116
+False,True,False,False,True,False,True,False,True,True,False,0.4790324891959163,0.240328418589662
+False,True,True,False,False,False,False,False,False,False,False,0.4396524552070445,0.2287259408856817
+False,True,False,True,False,False,False,False,False,False,False,0.4397373204854261,0.2011517094017094
+False,True,False,True,True,False,False,False,False,False,False,0.43823654101641785,0.18684986921777796

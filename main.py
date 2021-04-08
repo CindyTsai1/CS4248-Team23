@@ -1,26 +1,40 @@
 
+import csv
+from os import remove
+from re import T
+
 import matplotlib.pyplot as pyplot
 import pandas as pd
+from pandas.io.parsers import read_csv
+import spicy as sp
+import itertools
+from nltk import stem
+from pycontractions import Contractions
 from sklearn.metrics import f1_score
 from sklearn.model_selection import train_test_split
-from pycontractions import Contractions
-import csv
-from features.num_like import num_like_feature
-from features.singlish import singlish_feature
+from sklearn.feature_extraction.text import CountVectorizer
+from sklearn.naive_bayes import MultinomialNB
+from copy import deepcopy
+
 from features.ngram import ngram_feature
-from preprocessing.remove_digit import remove_digit_preprocessing
-from preprocessing.expand_contraction import expand_contraction_preprocessing
+from features.word_embeddings import word_embeddings_feature
+from features.singlish import singlish_feature
 from preprocessing.correct_spelling import correct_spelling_preprocessing
+from preprocessing.expand_contraction import expand_contraction_preprocessing
 from preprocessing.expand_short_form_words import expand_short_form_preprocessing
+from preprocessing.lemmatization import lemmatization_preprocessing
+from preprocessing.preprocessingFunctions import (convert_to_lowercase,
+                                                  punctuation_removal,
+                                                  stemming, stopwords_removal)
+from preprocessing.remove_digit import remove_digit_preprocessing
 from preprocessing.remove_link import remove_link_preprocessing
 from preprocessing.remove_newline import remove_newline_preprocessing
 from preprocessing.remove_non_english import remove_non_english_preprocessing
-from preprocessing.lemmatization import lemmatization_preprocessing
 
-cont: Contractions = Contractions('/Users/yuwen/Desktop/NUS/Year5Sem2/CS4248/Project/GoogleNews-vectors-negative300.bin.gz')
+#cont: Contractions = Contractions('/Users/yuwen/Desktop/NUS/Year5Sem2/CS4248/Project/GoogleNews-vectors-negative300.bin.gz')
 with open('/Users/yuwen/Desktop/NUS/Year5Sem2/CS4248/Project/CS4248-Team23/preprocessing/slang.txt', 'r') as myCSVfile:
     short_form_dict:dict = dict([pair for pair in csv.reader(myCSVfile, delimiter="=")])
-def preprocessing(sentence: str):
+def preprocessing(sentence: str, flags: list):
     ''' 
     takes in a row of data, preprocess it, return the processed row.
 
@@ -31,37 +45,53 @@ def preprocessing(sentence: str):
     
     Can write the functions in a separate file, import and execute here / or just write here since we didn't split this job
     '''
-    remove_digit: bool = False
-    expand_contraction: bool = False
-    correct_spelling: bool = False
-    replace_short_form_slang: bool = False
-    remove_link: bool = False
-    remove_newline: bool = False
-    remove_non_english: bool = False
-    lemmatization: bool = False
+    lowercased: bool = flags[0]
+    remove_punctuation: bool = flags[1]
+    remove_newline: bool = flags[2]
+    remove_non_english: bool = flags[3]
+    remove_digit: bool = flags[4]
+    correct_spelling: bool = flags[5]
+    expand_contraction: bool = flags[6]
+    replace_short_form_slang: bool = flags[7]
+    remove_stopwords: bool = flags[8]
+    lemmatization: bool = flags[9]
+    stemming_flag: bool = flags[10]
+    
+    # sentence = remove_link_preprocessing(sentence)
+
+    if lowercased:
+        sentence = convert_to_lowercase(sentence)
+    '''
+    if expand_contraction:
+        sentence = expand_contraction_preprocessing(sentence, cont)
+        print(sentence.split()[0])
+    '''
+    if remove_punctuation:
+        sentence = ' '.join(punctuation_removal(sentence.split()))
+
     if remove_newline:
         sentence = remove_newline_preprocessing(sentence)
 
-    if remove_digit:
-        sentence = remove_digit_preprocessing(sentence)
-        
     if remove_non_english:
         sentence = remove_non_english_preprocessing(sentence)
 
+    if remove_digit:
+        sentence = remove_digit_preprocessing(sentence)
+
     if correct_spelling:
         sentence = correct_spelling_preprocessing(sentence)
-
-    if expand_contraction:
-        sentence = expand_contraction_preprocessing(sentence, cont)
-
+    
     if replace_short_form_slang:
         sentence = expand_short_form_preprocessing(sentence, short_form_dict)
 
-    if remove_link:
-        sentence = remove_link_preprocessing(sentence)
-
+    if remove_stopwords:
+        sentence = ' '.join(stopwords_removal(sentence.split()))
+    
     if lemmatization:
         sentence = lemmatization_preprocessing(sentence)
+
+    if stemming_flag:
+        sentence = ' '.join(stemming(sentence.split()))
 
     return sentence
 
@@ -70,8 +100,8 @@ def feature_engineering(data: pd.DataFrame):
     Flags to be written here
     n_gram_feature: bool = False
     '''
-    num_like: bool = False
     singlish: bool = False
+    bow: bool = True
     ''' 
     Format:
     from features.ngram import ngram_feature
@@ -80,30 +110,40 @@ def feature_engineering(data: pd.DataFrame):
     
     Write your functions in separate python files in folder features and import them here to use, eg in features/ngram.py
     '''
-    features: pd.DataFrame = pd.DataFrame()
-    if num_like:
-        features = pd.concat([features, num_like_feature(data)], axis=1)
+    features: pd.DataFrame = data
     if singlish:
         features = pd.concat([features, singlish_feature(data['text'])], axis=1)
+    if bow:
+        print("bow")
+        vectorizer = CountVectorizer(max_features=500)
+        word_count_vector = vectorizer.fit_transform(data['text'])
+        features = pd.DataFrame(data=word_count_vector.todense(), columns=vectorizer.get_feature_names())
     return features
 
 def feature_engineering2(X_train: pd.DataFrame, X_validation: pd.DataFrame, X_test: pd.DataFrame):
-    X_train = feature_engineering(X_train)
-    X_validation = feature_engineering(X_validation)
-    X_test = feature_engineering(X_test)
+    X_train_feature = feature_engineering(X_train)
+    X_validation_feature = feature_engineering(X_validation)
+    X_test_feature = feature_engineering(X_test)
 
     n_gram_feature: bool = False
+    word_embedding: bool = False
 
     if n_gram_feature:
-        X_train_tfidf, X_validation_tfidf, X_test_tfidf = ngram_feature(X_train, X_validation, X_test)
-        X_train = sp.sparse.hstack((X_train_tfidf, X_train)) 
-        X_validation = sp.sparse.hstack((X_validation_tfidf, X_validation)) 
-        X_test = sp.sparse.hstack((X_test_tfidf, X_test)) 
+        X_train_tfidf, X_validation_tfidf, X_test_tfidf = ngram_feature(X_train['text'], X_validation['text'], X_test['text'])
+        X_train_feature = sp.sparse.hstack((X_train_tfidf, X_train_feature)) 
+        X_validation_feature = sp.sparse.hstack((X_validation_tfidf, X_validation_feature)) 
+        X_test_feature = sp.sparse.hstack((X_test_tfidf, X_test_feature)) 
     
-    return X_train, X_validation, X_test
+    if word_embedding:
+        X_train_word_embedding, X_validation_word_embedding, X_test_word_embedding = word_embeddings_feature(X_train['text'], X_validation['text'], X_test['text'])
+        X_train_feature = sp.sparse.hstack((X_train_word_embedding, X_train_feature)) 
+        X_validation_feature = sp.sparse.hstack((X_validation_word_embedding, X_validation_feature)) 
+        X_test_feature = sp.sparse.hstack((X_test_word_embedding, X_test_feature)) 
+
+    return X_train_feature, X_validation_feature, X_test_feature
    
 
-def train_model(model, train_features: pd.DataFrame, validation_features: pd.DataFrame):
+def train_model(model, train_features: pd.DataFrame, validation_features: pd.DataFrame, train_label: pd.Series, validation_label:pd.Series):
     '''
     Flags to be written here
     n_gram_model: bool = False
@@ -116,6 +156,10 @@ def train_model(model, train_features: pd.DataFrame, validation_features: pd.Dat
     
     Write your functions in separate python files in folder models and import them here to use
     '''
+    naive_bayes: bool = True
+    if naive_bayes:
+        print("naive bayes")
+        model = MultinomialNB().fit(train_features, train_label)
     return model
 
 def plot(history):
@@ -134,7 +178,7 @@ def plot(history):
     pyplot.legend()
     pyplot.savefig('history.png')
 
-def predict(model, X_test_features: pd.DataFrame):
+def predict(model: MultinomialNB, X_test_features: pd.DataFrame):
     return pd.Series(model.predict(X_test_features))
 
 def generate_result(test: pd.DataFrame, y_pred: pd.Series, filename: str):
@@ -144,40 +188,57 @@ def generate_result(test: pd.DataFrame, y_pred: pd.Series, filename: str):
 
 def main():
     ''' load train, val, and test data '''
-    train: pd.DataFrame = pd.read_csv('v4.csv')
-    train.drop(train['text'].str.len == 0)
-    # data = data.dropna(axis = 0, subset=['text'], inplace=False)
-    
+    old_train: pd.DataFrame = pd.read_csv('Project/CS4248-Team23/data/v6_.csv')
+    old_train = old_train.dropna(axis = 0, subset=['text'], inplace=False)
+    label: pd.Series = old_train['label']
+    train: pd.DataFrame = deepcopy(old_train)
+    print("loaded data")
+    flag_names: list = ["lowercased","remove_punctuation","remove_newline","remove_non_english","remove_digit","correct_spelling","expand_contraction",
+        "replace_short_form_slang","remove_stopwords","lemmatization","stemming"]
+    #cont.load_models()
+    print("loaded contraction model")
+    scores: pd.DataFrame = pd.DataFrame(pd.read_csv('Project/CS4248-Team23/preprocessing/scores.csv'), columns=flag_names+["training_score","test_score"])
+    flags = [False,True,False,True,False,True,False,False,False,False,False]
     # pre-processing
-    cont.load_models()
-    train['text'] = train['text'].apply(preprocessing)
+    print("start preprocessing")
+    train['text'] = old_train['text'].copy()
+    train['text'] = train['text'].apply(preprocessing, args=(flags,))
+    filename = "Project/CS4248-Team23/data/v6_" + '_'.join(filter(lambda a: flags[flag_names.index(a)], flag_names)) + ".csv"
+    train.to_csv(filename, index=False)
+    print("stored preprocessing")
 
     # split data into train, validation, test set
-    train, validation = train_test_split(train, test_size=0.2, random_state=10)
-    test, validation = train_test_split(validation, test_size=0.5, random_state=10)
-    
+    train, validation, train_label, validation_label = train_test_split(train, label, test_size=0.2, random_state=10)
+    test, validation, test_label, validation_label = train_test_split(validation, validation_label, test_size=0.5, random_state=10)
+        
     # features
-    # train_features: pd.DataFrame = feature_engineering(train)
-    # validation_features: pd.DataFrame = feature_engineering(validation)
-    # test_features: pd.DataFrame = feature_engineering(test)
     train_features, validation_features, test_features = feature_engineering2(train, validation, test)
-    
+    print("finish features")
     # The following was used when reloading the model to further train
     # model = load_model('my_model')
     # GoEmotions pre-trained model can be imported here
     model = None
 
-    model = train_model(model, train_features, validation_features)
+    model = train_model(model, train_features, validation_features, train_label, validation_label)
     # test your model
+    print("start prediction")
     y_pred: pd.Series = predict(model, train_features)
 
     # Use f1-macro as the metric
-    # score: float = f1_score(y_train, y_pred, average='macro')
-    # print('score on validation = {}'.format(score))
+    score: float = f1_score(train_label, y_pred, average='macro')
+    print('score on validation = {}'.format(score))
 
     # generate prediction on test data
     y_pred: pd.Series = predict(model, test_features)
-    generate_result(test, y_pred, "result.csv")
+    score2: float = f1_score(test_label, y_pred, average='macro')
+    print('score on test = {}'.format(score2))
+
+    row: dict = dict(zip(flag_names, flags))
+    row['training_score'] = score
+    row['test_score'] = score2
+    scores = scores.append(row, ignore_index=True)
+    scores.to_csv('Project/CS4248-Team23/preprocessing/scores.csv', index=False)
+    #generate_result(test_label, y_pred, "result.csv")
 
 # Allow the main class to be invoked if run as a file.
 if __name__ == "__main__":

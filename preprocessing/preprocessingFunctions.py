@@ -18,7 +18,7 @@ def sent_tokenizer(sentence):
     return tokenized_sent
 
 
-regex = re.compile('[%s]' % re.escape(string.punctuation))
+regex = re.compile('[%s]' % re.escape(string.punctuation+"“”’"))
 
 def punctuation_removal(tokens):
     tokenized_no_punc = [] #list of tokenized words
