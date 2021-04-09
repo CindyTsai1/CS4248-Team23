@@ -31,9 +31,13 @@ from preprocessing.remove_link import remove_link_preprocessing
 from preprocessing.remove_newline import remove_newline_preprocessing
 from preprocessing.remove_non_english import remove_non_english_preprocessing
 
-#cont: Contractions = Contractions('/Users/yuwen/Desktop/NUS/Year5Sem2/CS4248/Project/GoogleNews-vectors-negative300.bin.gz')
-with open('/Users/yuwen/Desktop/NUS/Year5Sem2/CS4248/Project/CS4248-Team23/preprocessing/slang.txt', 'r') as myCSVfile:
-    short_form_dict:dict = dict([pair for pair in csv.reader(myCSVfile, delimiter="=")])
+preprocessing_not_done: bool = False
+feature_extraction: bool = True
+model_training: bool = False
+if preprocessing_not_done:
+    cont: Contractions = Contractions('/Users/yuwen/Desktop/NUS/Year5Sem2/CS4248/Project/GoogleNews-vectors-negative300.bin.gz')
+    with open('/Users/yuwen/Desktop/NUS/Year5Sem2/CS4248/Project/CS4248-Team23/preprocessing/slang.txt', 'r') as myCSVfile:
+        short_form_dict:dict = dict([pair for pair in csv.reader(myCSVfile, delimiter="=")])
 def preprocessing(sentence: str, flags: list):
     ''' 
     takes in a row of data, preprocess it, return the processed row.
@@ -61,7 +65,7 @@ def preprocessing(sentence: str, flags: list):
 
     if lowercased:
         sentence = convert_to_lowercase(sentence)
-    '''
+
     if expand_contraction:
         sentence = expand_contraction_preprocessing(sentence, cont)
         print(sentence.split()[0])
@@ -86,7 +90,7 @@ def preprocessing(sentence: str, flags: list):
 
     if remove_stopwords:
         sentence = ' '.join(stopwords_removal(sentence.split()))
-    '''
+
     if lemmatization:
         sentence = lemmatization_preprocessing(sentence)
 
@@ -120,27 +124,21 @@ def feature_engineering(data: pd.DataFrame):
         features = pd.DataFrame(data=word_count_vector.todense(), columns=vectorizer.get_feature_names())
     return features
 
-def feature_engineering2(X_train: pd.DataFrame, X_validation: pd.DataFrame, X_test: pd.DataFrame):
+def feature_engineering2(X_train: pd.DataFrame):
     X_train_feature = feature_engineering(X_train)
-    X_validation_feature = feature_engineering(X_validation)
-    X_test_feature = feature_engineering(X_test)
 
     n_gram_feature: bool = False
     word_embedding: bool = False
 
     if n_gram_feature:
-        X_train_tfidf, X_validation_tfidf, X_test_tfidf = ngram_feature(X_train['text'], X_validation['text'], X_test['text'])
-        X_train_feature = sp.sparse.hstack((X_train_tfidf, X_train_feature)) 
-        X_validation_feature = sp.sparse.hstack((X_validation_tfidf, X_validation_feature)) 
-        X_test_feature = sp.sparse.hstack((X_test_tfidf, X_test_feature)) 
+        X_train_tfidf = ngram_feature(X_train['text'])
+        X_train_feature = sp.sparse.hstack((X_train_tfidf, X_train_feature))
     
     if word_embedding:
-        X_train_word_embedding, X_validation_word_embedding, X_test_word_embedding = word_embeddings_feature(X_train['text'], X_validation['text'], X_test['text'])
-        X_train_feature = sp.sparse.hstack((X_train_word_embedding, X_train_feature)) 
-        X_validation_feature = sp.sparse.hstack((X_validation_word_embedding, X_validation_feature)) 
-        X_test_feature = sp.sparse.hstack((X_test_word_embedding, X_test_feature)) 
+        X_train_word_embedding = word_embeddings_feature(X_train['text'])
+        X_train_feature = sp.sparse.hstack((X_train_word_embedding, X_train_feature))
 
-    return X_train_feature, X_validation_feature, X_test_feature
+    return X_train_feature
    
 
 def train_model(model, train_features: pd.DataFrame, validation_features: pd.DataFrame, train_label: pd.Series, validation_label:pd.Series):
@@ -187,58 +185,69 @@ def generate_result(test: pd.DataFrame, y_pred: pd.Series, filename: str):
     test.to_csv(filename, index=False)
 
 def main():
-    ''' load train, val, and test data '''
-    old_train: pd.DataFrame = pd.read_csv('Project/CS4248-Team23/data/v6_remove_punctuation_remove_non_english_correct_spelling_remove_stopwords.csv')
+    '''
+    If loading processsed data v6_remove_punctuation_remove_non_english_correct_spelling_replace_short_form_slang.csv, set preprocessing_not_done to False
+    If loading feature csv, set feature_extraction to False and change the loaded feature file name
+    If training model, set model_training to True
+    '''
+    old_train: pd.DataFrame = pd.read_csv('CS4248-Team23/data/v6_remove_punctuation_remove_non_english_correct_spelling_replace_short_form_slang.csv')
     old_train = old_train.dropna(axis = 0, subset=['text'], inplace=False)
     label: pd.Series = old_train['label']
     train: pd.DataFrame = deepcopy(old_train)
     print("loaded data")
-    flag_names: list = ["lowercased","remove_punctuation","remove_newline","remove_non_english","remove_digit","correct_spelling","expand_contraction",
-        "replace_short_form_slang","remove_stopwords","lemmatization","stemming"]
-    #cont.load_models()
-    print("loaded contraction model")
-    scores: pd.DataFrame = pd.DataFrame(pd.read_csv('Project/CS4248-Team23/preprocessing/scores.csv'), columns=flag_names+["training_score","test_score"])
-    flags = [False,True,False,True,False,True,False,False,True,True,False]
-    # pre-processing
-    print("start preprocessing")
-    train['text'] = old_train['text'].copy()
-    train['text'] = train['text'].apply(preprocessing, args=(flags,))
-    filename = "Project/CS4248-Team23/data/v6_" + '_'.join(filter(lambda a: flags[flag_names.index(a)], flag_names)) + ".csv"
-    train.to_csv(filename, index=False)
-    print("stored preprocessing")
-
-    # split data into train, validation, test set
-    train, validation, train_label, validation_label = train_test_split(train, label, test_size=0.2, random_state=10)
-    test, validation, test_label, validation_label = train_test_split(validation, validation_label, test_size=0.5, random_state=10)
+    if preprocessing_not_done:
+        flag_names: list = ["lowercased","remove_punctuation","remove_newline","remove_non_english","remove_digit","correct_spelling","expand_contraction",
+            "replace_short_form_slang","remove_stopwords","lemmatization","stemming"]
+        #cont.load_models()
+        print("loaded contraction model")
+        scores: pd.DataFrame = pd.DataFrame(pd.read_csv('CS4248-Team23/preprocessing/scores.csv'), columns=flag_names+["training_score","test_score"])
+        flags = [False,True,False,True,False,True,False,False,True,True,False]
+        # pre-processing
+        print("start preprocessing")
+        train['text'] = old_train['text'].copy()
+        train['text'] = train['text'].apply(preprocessing, args=(flags,))
+        filename = "Project/CS4248-Team23/data/v6_" + '_'.join(filter(lambda a: flags[flag_names.index(a)], flag_names)) + ".csv"
+        train.to_csv(filename, index=False)
+        print("stored preprocessing")
         
     # features
-    train_features, validation_features, test_features = feature_engineering2(train, validation, test)
-    print("finish features")
-    # The following was used when reloading the model to further train
-    # model = load_model('my_model')
-    # GoEmotions pre-trained model can be imported here
-    model = None
+    if feature_extraction:
+        train_features: pd.DataFrame = feature_engineering2(train)
+        train_features.to_csv('CS4248-Team23/features/<your feature name>.csv', index=False)
+        print("finish features")
+    else: 
+        train_features: pd.DataFrame = pd.read_csv('CS4248-Team23/features/<your feature name>.csv')
+        print("loaded features")
 
-    model = train_model(model, train_features, validation_features, train_label, validation_label)
-    # test your model
-    print("start prediction")
-    y_pred: pd.Series = predict(model, train_features)
+    if model_training:
+        # split data into train, validation, test set
+        train_features, validation_features, train_label, validation_label = train_test_split(train_features, label, test_size=0.2, random_state=10)
+        test_features, validation_features, test_label, validation_label = train_test_split(validation_features, validation_label, test_size=0.5, random_state=10)
+        
+        # The following was used when reloading the model to further train
+        # model = load_model('my_model')
+        # GoEmotions pre-trained model can be imported here
+        model = None
 
-    # Use f1-macro as the metric
-    score: float = f1_score(train_label, y_pred, average='macro')
-    print('score on validation = {}'.format(score))
+        model = train_model(model, train_features, validation_features, train_label, validation_label)
+        # test your model
+        print("start prediction")
+        y_pred: pd.Series = predict(model, train_features)
 
-    # generate prediction on test data
-    y_pred: pd.Series = predict(model, test_features)
-    score2: float = f1_score(test_label, y_pred, average='macro')
-    print('score on test = {}'.format(score2))
+        # Use f1-macro as the metric
+        score: float = f1_score(train_label, y_pred, average='macro')
+        print('score on validation = {}'.format(score))
 
-    row: dict = dict(zip(flag_names, flags))
-    row['training_score'] = score
-    row['test_score'] = score2
-    scores = scores.append(row, ignore_index=True)
-    scores.to_csv('Project/CS4248-Team23/preprocessing/scores.csv', index=False)
-    #generate_result(test_label, y_pred, "result.csv")
+        # generate prediction on test data
+        y_pred: pd.Series = predict(model, test_features)
+        score2: float = f1_score(test_label, y_pred, average='macro')
+        print('score on test = {}'.format(score2))
+
+        row: dict = dict(zip(flag_names, flags))
+        row['training_score'] = score
+        row['test_score'] = score2
+        scores = scores.append(row, ignore_index=True)
+        scores.to_csv('CS4248-Team23/preprocessing/scores.csv', index=False)
 
 # Allow the main class to be invoked if run as a file.
 if __name__ == "__main__":

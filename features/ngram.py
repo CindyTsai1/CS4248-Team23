@@ -10,10 +10,8 @@ import pandas as pd
 #     ), columns=tfidf_ngram_vectorizer.get_feature_names())
 #     return tfidf_ngram
 
-def ngram_feature(X_train: pd.Series, X_validation: pd.Series, X_test: pd.Series):
+def ngram_feature(X_train: pd.Series):
     vectorizer = TfidfVectorizer(stop_words="english", ngram_range=(1, 6))
     X_train_tfidf = vectorizer.fit_transform(X_train['text'])
-    X_validation_tfidf = vectorizer.transform(X_validation['text'])
-    X_test_tfidf = vectorizer.transform(X_test['text'])
 
-    return X_train_tfidf, X_validation_tfidf, X_test_tfidf
+    return X_train_tfidf
