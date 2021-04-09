@@ -105,7 +105,7 @@ def feature_engineering(data: pd.DataFrame):
     n_gram_feature: bool = False
     '''
     singlish: bool = False
-    bow: bool = True
+    bow: bool = False
     ''' 
     Format:
     from features.ngram import ngram_feature
@@ -114,7 +114,7 @@ def feature_engineering(data: pd.DataFrame):
     
     Write your functions in separate python files in folder features and import them here to use, eg in features/ngram.py
     '''
-    features: pd.DataFrame = data
+    features: pd.DataFrame = pd.DataFrame()
     if singlish:
         features = pd.concat([features, singlish_feature(data['text'])], axis=1)
     if bow:
