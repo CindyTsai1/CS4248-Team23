@@ -31,7 +31,7 @@ from preprocessing.remove_link import remove_link_preprocessing
 from preprocessing.remove_newline import remove_newline_preprocessing
 from preprocessing.remove_non_english import remove_non_english_preprocessing
 
-preprocessing_not_done: bool = False
+preprocessing_not_done: bool = True
 feature_extraction: bool = True
 model_training: bool = False
 if preprocessing_not_done:
@@ -121,7 +121,7 @@ def feature_engineering(data: pd.DataFrame):
         print("bow")
         vectorizer = CountVectorizer(max_features=500)
         word_count_vector = vectorizer.fit_transform(data['text'])
-        features = pd.DataFrame(data=word_count_vector.todense(), columns=vectorizer.get_feature_names())
+        features = pd.concat([features, pd.DataFrame(data=word_count_vector.todense(), columns=vectorizer.get_feature_names())], axis=1)
     return features
 
 def feature_engineering2(X_train: pd.DataFrame):
@@ -190,7 +190,7 @@ def main():
     If loading feature csv, set feature_extraction to False and change the loaded feature file name
     If training model, set model_training to True
     '''
-    old_train: pd.DataFrame = pd.read_csv('CS4248-Team23/data/v6_remove_punctuation_remove_non_english_correct_spelling_replace_short_form_slang.csv')
+    old_train: pd.DataFrame = pd.read_csv('data/v6_remove_punctuation_remove_non_english_correct_spelling_replace_short_form_slang.csv')
     old_train = old_train.dropna(axis = 0, subset=['text'], inplace=False)
     label: pd.Series = old_train['label']
     train: pd.DataFrame = deepcopy(old_train)
@@ -200,7 +200,7 @@ def main():
             "replace_short_form_slang","remove_stopwords","lemmatization","stemming"]
         #cont.load_models()
         print("loaded contraction model")
-        scores: pd.DataFrame = pd.DataFrame(pd.read_csv('CS4248-Team23/preprocessing/scores.csv'), columns=flag_names+["training_score","test_score"])
+        scores: pd.DataFrame = pd.DataFrame(pd.read_csv('preprocessing/scores.csv'), columns=flag_names+["training_score","test_score"])
         flags = [False,True,False,True,False,True,False,False,True,True,False]
         # pre-processing
         print("start preprocessing")
@@ -213,10 +213,10 @@ def main():
     # features
     if feature_extraction:
         train_features: pd.DataFrame = feature_engineering2(train)
-        train_features.to_csv('CS4248-Team23/features/<your feature name>.csv', index=False)
+        train_features.to_csv('features/<your feature name>.csv', index=False)
         print("finish features")
     else: 
-        train_features: pd.DataFrame = pd.read_csv('CS4248-Team23/features/<your feature name>.csv')
+        train_features: pd.DataFrame = pd.read_csv('features/<your feature name>.csv')
         print("loaded features")
 
     if model_training:
@@ -247,7 +247,7 @@ def main():
         row['training_score'] = score
         row['test_score'] = score2
         scores = scores.append(row, ignore_index=True)
-        scores.to_csv('CS4248-Team23/preprocessing/scores.csv', index=False)
+        scores.to_csv('preprocessing/scores.csv', index=False)
 
 # Allow the main class to be invoked if run as a file.
 if __name__ == "__main__":
