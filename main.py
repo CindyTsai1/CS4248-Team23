@@ -1,16 +1,13 @@
 
 import csv
+from models.logistic_regression import logistic_regression
 from os import remove
 from re import T
 
-import matplotlib.pyplot as pyplot
 import pandas as pd
-from pandas.io.parsers import read_csv
 import spicy as sp
-import itertools
-from nltk import stem
 from pycontractions import Contractions
-from sklearn.metrics import f1_score
+from sklearn.metrics import f1_score, make_scorer
 from sklearn.model_selection import train_test_split
 from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.naive_bayes import MultinomialNB
@@ -30,6 +27,8 @@ from preprocessing.remove_digit import remove_digit_preprocessing
 from preprocessing.remove_link import remove_link_preprocessing
 from preprocessing.remove_newline import remove_newline_preprocessing
 from preprocessing.remove_non_english import remove_non_english_preprocessing
+from models.logistic_regression import logistic_regression
+from models.nn import nn
 
 preprocessing_not_done: bool = False
 feature_extraction: bool = True
@@ -61,7 +60,7 @@ def preprocessing(sentence: str, flags: list):
     lemmatization: bool = flags[9]
     stemming_flag: bool = flags[10]
     
-    # sentence = remove_link_preprocessing(sentence)
+    sentence = remove_link_preprocessing(sentence)
 
     if lowercased:
         sentence = convert_to_lowercase(sentence)
@@ -153,27 +152,21 @@ def train_model(model, train_features: pd.DataFrame, validation_features: pd.Dat
     
     Write your functions in separate python files in folder models and import them here to use
     '''
+    f1_scorer = make_scorer(f1_score, average='macro')
     naive_bayes: bool = False
+    logistic: bool = False
+    neural_network: bool = False
+
     if naive_bayes:
         print("naive bayes")
         model = MultinomialNB().fit(train_features, train_label)
+    elif logistic:
+        print("logistic regression")
+        model = logistic_regression(train_features, train_label, f1_scorer)
+    elif neural_network:
+        print("neural network")
+        model = nn(train_features, train_label, validation_features, validation_label)
     return model
-
-def plot(history):
-    x = range(1, len(history.history['accuracy']) + 1)
-    pyplot.style.use('ggplot')
-    pyplot.figure(figsize=(12, 5))
-    pyplot.subplot(1, 2, 1)
-    pyplot.plot(x, history.history['accuracy'], 'b', label='Training acc')
-    pyplot.plot(x, history.history['validation_accuracy'], 'r', label='Validation acc')
-    pyplot.title('Training and validation accuracy')
-    pyplot.legend()
-    pyplot.subplot(1, 2, 2)
-    pyplot.plot(x, history.history['loss'], 'b', label='Training loss')
-    pyplot.plot(x, history.history['validation_loss'], 'r', label='Validation loss')
-    pyplot.title('Training and validation loss')
-    pyplot.legend()
-    pyplot.savefig('history.png')
 
 def predict(model: MultinomialNB, X_test_features: pd.DataFrame):
     return pd.Series(model.predict(X_test_features))
