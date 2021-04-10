@@ -31,7 +31,7 @@ from preprocessing.remove_link import remove_link_preprocessing
 from preprocessing.remove_newline import remove_newline_preprocessing
 from preprocessing.remove_non_english import remove_non_english_preprocessing
 
-preprocessing_not_done: bool = True
+preprocessing_not_done: bool = False
 feature_extraction: bool = True
 model_training: bool = False
 if preprocessing_not_done:
@@ -68,7 +68,6 @@ def preprocessing(sentence: str, flags: list):
 
     if expand_contraction:
         sentence = expand_contraction_preprocessing(sentence, cont)
-        print(sentence.split()[0])
     
     if remove_punctuation:
         sentence = ' '.join(punctuation_removal(sentence.split()))
@@ -104,7 +103,7 @@ def feature_engineering(data: pd.DataFrame):
     Flags to be written here
     n_gram_feature: bool = False
     '''
-    singlish: bool = False
+    singlish: bool = True
     bow: bool = False
     ''' 
     Format:
@@ -116,7 +115,7 @@ def feature_engineering(data: pd.DataFrame):
     '''
     features: pd.DataFrame = pd.DataFrame()
     if singlish:
-        features = pd.concat([features, singlish_feature(data['text'])], axis=1)
+        features = pd.concat([features, singlish_feature(data['text']).rename('singlish_negativity')], axis=1)
     if bow:
         print("bow")
         vectorizer = CountVectorizer(max_features=500)
@@ -154,7 +153,7 @@ def train_model(model, train_features: pd.DataFrame, validation_features: pd.Dat
     
     Write your functions in separate python files in folder models and import them here to use
     '''
-    naive_bayes: bool = True
+    naive_bayes: bool = False
     if naive_bayes:
         print("naive bayes")
         model = MultinomialNB().fit(train_features, train_label)
@@ -212,8 +211,9 @@ def main():
         
     # features
     if feature_extraction:
+        print("start feature extraction")
         train_features: pd.DataFrame = feature_engineering2(train)
-        train_features.to_csv('features/<your feature name>.csv', index=False)
+        train_features.to_csv('features/singlish_negativity.csv', index=False)
         print("finish features")
     else: 
         train_features: pd.DataFrame = pd.read_csv('features/<your feature name>.csv')

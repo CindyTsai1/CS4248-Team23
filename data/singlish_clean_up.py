@@ -1,4 +1,16 @@
 import pandas as pd
+import re
+import string
+
+regex = re.compile('[%s]' % re.escape(string.punctuation+"“”’"))
+
+def punctuation_removal(tokens):
+    tokenized_no_punc = [] #list of tokenized words
+    for token in tokens:
+        new_token = regex.sub(u'', token)
+        if not new_token == u'':
+            tokenized_no_punc.append(new_token)
+    return tokenized_no_punc
 
 COLUMN0: str = 'word'
 COLUMN1: str = 'description'
@@ -43,6 +55,11 @@ def duplicate_words_with_extra_h(df: pd.DataFrame, noMoreBracket: bool):
     df = df.sort_index().reset_index(drop=True)
     return df, noMoreBracket
 
+def remove_punc(df: pd.DataFrame):
+    for index, row in df.iterrows():
+        df.loc[index][COLUMN0] = ' '.join(punctuation_removal(df.loc[index][COLUMN0].split()))
+    return df
+
 if False:
     data: pd.DataFrame = pd.DataFrame(pd.read_csv("/Users/yuwen/Desktop/NUS/Year5Sem2/CS4248/Project/CS4248-Team23/data/singlish_raw.csv"), columns=[COLUMN0])
     data = data.dropna(axis = 0, subset=[COLUMN0], inplace=False)
@@ -59,4 +76,10 @@ if False:
 
 data: pd.DataFrame = pd.DataFrame(pd.read_csv("/Users/yuwen/Desktop/NUS/Year5Sem2/CS4248/Project/CS4248-Team23/data/singlish_1.csv"), columns=[COLUMN0, COLUMN1])
 data['label'] = ''
+data[COLUMN0] = data[COLUMN0].apply(data_clean)
+data = duplicate_different_forms_of_same_word(data)
+noMoreBracket: bool = False
+while not noMoreBracket:
+    data, noMoreBracket = duplicate_words_with_extra_h(data,noMoreBracket)
+data = remove_punc(data)
 data.to_csv("/Users/yuwen/Desktop/NUS/Year5Sem2/CS4248/Project/CS4248-Team23/data/singlish_2.csv", index=False)
