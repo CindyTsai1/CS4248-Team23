@@ -13,6 +13,7 @@ from sklearn.feature_extraction.text import CountVectorizer, TfidfVectorizer
 from sklearn.naive_bayes import MultinomialNB
 from copy import deepcopy
 
+from features.bow import bow_feature
 from features.ngram import ngram_feature
 from features.word_embeddings import word_embeddings_feature
 from features.singlish import singlish_feature
@@ -31,7 +32,9 @@ from models.logistic_regression import logistic_regression
 from models.nn import nn
 
 preprocessing_not_done: bool = False
-feature_extraction: bool = False
+feature_extraction: bool = False # refers to feature extraction before splitting of data (i.e. does not include bow/tfidf)
+bow: bool = False # set specifically for bow
+tfidf: bool = True # set specifically for tfidf
 model_training: bool = True # False
 
 if preprocessing_not_done:
@@ -104,7 +107,7 @@ def feature_engineering(data: pd.DataFrame):
     n_gram_feature: bool = False
     '''
     singlish: bool = False
-    bow: bool = False
+    word_embedding: bool = False
     ''' 
     Format:
     from features.ngram import ngram_feature
@@ -114,33 +117,34 @@ def feature_engineering(data: pd.DataFrame):
     Write your functions in separate python files in folder features and import them here to use, eg in features/ngram.py
     '''
     features: pd.DataFrame = pd.DataFrame()
+
     if singlish:
         features = pd.concat([features, singlish_feature(data['text']).rename('singlish_negativity')], axis=1)
-    elif bow:
-        print("bow")
-        vectorizer = CountVectorizer(max_features=1000)
-        word_count_vector = vectorizer.fit_transform(data['text'])
-        features = pd.concat([features, pd.DataFrame(data=word_count_vector.todense(), columns=vectorizer.get_feature_names())], axis=1)
+
+    elif word_embedding:
+        X_train_word_embedding = word_embeddings_feature(data['text'])
+        features = sp.sparse.hstack((X_train_word_embedding, features))
+
     return features
 
-def feature_engineering2(X_train: pd.DataFrame):
-    X_train_feature = feature_engineering(X_train)
+def feature_engineering2(X_train: pd.DataFrame, X_validation: pd.DataFrame, X_test: pd.DataFrame):
+    X_train_feature: pd.DataFrame = pd.DataFrame()
+    X_validation_feature: pd.DataFrame = pd.DataFrame()
+    X_test_feature: pd.DataFrame = pd.DataFrame()
 
-    n_gram_feature: bool = True
-    word_embedding: bool = False
+    # bow and tfidf booleans moved to the top of the source code now
+    # bow: bool = False
+    # tfidf: bool = False
 
-    if n_gram_feature:
-        vectorizer = TfidfVectorizer(max_features=1000, stop_words="english", ngram_range=(1, 6))
-        X_train_tfidf = vectorizer.fit_transform(X_train['text'])
-        X_train_feature = pd.concat([X_train_feature, pd.DataFrame(data=X_train_tfidf.todense(), columns=vectorizer.get_feature_names())], axis=1)
-        # X_train_tfidf = ngram_feature(X_train['text'])
-        # X_train_feature = sp.sparse.hstack((X_train_tfidf, X_train_feature))
+    if bow:
+        print("bow")
+        X_train_feature, X_validation_feature, X_test_feature = bow_feature(X_train, X_validation, X_test)
+       
+    elif tfidf:
+        print("tfidf")
+        X_train_feature, X_validation_feature, X_test_feature = ngram_feature(X_train, X_validation, X_test)
 
-    if word_embedding:
-        X_train_word_embedding = word_embeddings_feature(X_train['text'])
-        X_train_feature = sp.sparse.hstack((X_train_word_embedding, X_train_feature))
-
-    return X_train_feature
+    return X_train_feature, X_validation_feature, X_test_feature
    
 
 def train_model(model, train_features: pd.DataFrame, validation_features: pd.DataFrame, train_label: pd.Series, validation_label:pd.Series):
@@ -188,7 +192,6 @@ def main():
     '''
     old_train: pd.DataFrame = pd.read_csv('data/v6_remove_punctuation_remove_non_english_correct_spelling_replace_short_form_slang.csv')
     old_train = old_train.dropna(axis = 0, subset=['text'], inplace=False)
-    # print(old_train.head()) # 35 columns
     label: pd.Series = old_train['label']
     train: pd.DataFrame = deepcopy(old_train)
     print("loaded data")
@@ -208,30 +211,47 @@ def main():
         train.to_csv(filename, index=False)
         print("stored preprocessing")
         
-    # features
+    # feature extraction before splitting of data
     if feature_extraction:
-        print("start feature extraction")
-        train_features: pd.DataFrame = feature_engineering2(train)
-        train_features.to_csv('features/some_name.csv', index=False)
-        print("finish features")
+        print("start feature extraction part 1 (before splitting of data)")
+        train_features: pd.DataFrame = feature_engineering(train)
+        train_features.to_csv('features/some_name.csv', index=False) # take note of overwriting ~ 
+
+        # add 'text' col to train_features for bow/tfidf in feature extraction part II
+        train_features = pd.concat([train_features, train['text']], axis=1)
+        print("finished feature extraction part 1")
     else: 
+        train_features = train[['text']]
         # train_features: pd.DataFrame = pd.read_csv('features/singlish_negativity.csv')
-        # train_features: pd.DataFrame = pd.read_csv('features/bow.csv')
-        train_features: pd.DataFrame = pd.read_csv('features/tfidf.csv')
+        
         # uncomment and repeat the following row to input multiple feature files and concatenate the features into one dataframe
         # train_features = pd.concat([train_features, pd.read_csv('features/<your feature name>.csv')], axis=1)
-        # train_features = pd.concat([train_features, pd.read_csv('features/bow.csv')], axis=1)
-        print("loaded features")
+        train_features = pd.concat([train_features, pd.read_csv('features/singlish_negativity.csv')], axis=1)
+        print("loaded features (Part 1)")
 
-    print(type(train_features))
-    print(train_features.head())
-    print(train_features.info())
+    # split data into train, validation, test set
+    train_features, validation_features, train_label, validation_label = train_test_split(train_features, label, test_size=0.2, random_state=10)
+    test_features, validation_features, test_label, validation_label = train_test_split(validation_features, validation_label, test_size=0.5, random_state=10)
+
+    # feature extraction part II for bow/tfidf
+    if bow or tfidf:
+        print("start feature extraction part 2 (after splitting of data)")
+        train_vector, validation_vector, test_vector = feature_engineering2(train_features, validation_features, test_features)
+
+        train_features.drop(['text'], axis=1, inplace=True)
+        validation_features.drop(['text'], axis=1, inplace=True)
+        test_features.drop(['text'], axis=1, inplace=True)
+
+        train_features = sp.sparse.hstack((train_vector, train_features))
+        validation_features = sp.sparse.hstack((validation_vector, validation_features))
+        test_features = sp.sparse.hstack((test_vector, test_features))
+        print("finished feature extraction part 2")
+    else:
+        train_features.drop(['text'], axis=1, inplace=True)
+        validation_features.drop(['text'], axis=1, inplace=True)
+        test_features.drop(['text'], axis=1, inplace=True)
 
     if model_training:
-        # split data into train, validation, test set
-        train_features, validation_features, train_label, validation_label = train_test_split(train_features, label, test_size=0.2, random_state=10)
-        test_features, validation_features, test_label, validation_label = train_test_split(validation_features, validation_label, test_size=0.5, random_state=10)
-        
         # The following was used when reloading the model to further train
         # model = load_model('my_model')
         # GoEmotions pre-trained model can be imported here
