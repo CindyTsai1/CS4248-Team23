@@ -209,7 +209,9 @@ def main():
         train_features.to_csv('features/singlish_negativity.csv', index=False)
         print("finish features")
     else: 
-        train_features: pd.DataFrame = pd.read_csv('features/<your feature name>.csv')
+        train_features: pd.DataFrame = pd.read_csv('features/singlish_negativity.csv')
+        # uncomment and repeat the following row to input multiple feature files and concatenate the features into one dataframe
+        # train_features = pd.concat([train_features, pd.read_csv('features/<your feature name>.csv')], axis=1)
         print("loaded features")
 
     if model_training:
