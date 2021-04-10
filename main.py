@@ -102,7 +102,7 @@ def feature_engineering(data: pd.DataFrame):
     Flags to be written here
     n_gram_feature: bool = False
     '''
-    singlish: bool = True
+    singlish: bool = False
     bow: bool = False
     ''' 
     Format:
@@ -115,9 +115,9 @@ def feature_engineering(data: pd.DataFrame):
     features: pd.DataFrame = pd.DataFrame()
     if singlish:
         features = pd.concat([features, singlish_feature(data['text']).rename('singlish_negativity')], axis=1)
-    if bow:
+    elif bow:
         print("bow")
-        vectorizer = CountVectorizer(max_features=500)
+        vectorizer = CountVectorizer(max_features=1000)
         word_count_vector = vectorizer.fit_transform(data['text'])
         features = pd.concat([features, pd.DataFrame(data=word_count_vector.todense(), columns=vectorizer.get_feature_names())], axis=1)
     return features
@@ -206,7 +206,7 @@ def main():
     if feature_extraction:
         print("start feature extraction")
         train_features: pd.DataFrame = feature_engineering2(train)
-        train_features.to_csv('features/singlish_negativity.csv', index=False)
+        train_features.to_csv('features/bow.csv', index=False)
         print("finish features")
     else: 
         train_features: pd.DataFrame = pd.read_csv('features/singlish_negativity.csv')
