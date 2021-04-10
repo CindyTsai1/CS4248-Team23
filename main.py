@@ -5,19 +5,19 @@ from os import remove
 from re import T
 
 import pandas as pd
-import spicy as sp
-from pycontractions import Contractions
+import scipy as sp
+# from pycontractions import Contractions
 from sklearn.metrics import f1_score, make_scorer
 from sklearn.model_selection import train_test_split
-from sklearn.feature_extraction.text import CountVectorizer
+from sklearn.feature_extraction.text import CountVectorizer, TfidfVectorizer
 from sklearn.naive_bayes import MultinomialNB
 from copy import deepcopy
 
 from features.ngram import ngram_feature
 from features.word_embeddings import word_embeddings_feature
 from features.singlish import singlish_feature
-from preprocessing.correct_spelling import correct_spelling_preprocessing
-from preprocessing.expand_contraction import expand_contraction_preprocessing
+# from preprocessing.correct_spelling import correct_spelling_preprocessing
+# from preprocessing.expand_contraction import expand_contraction_preprocessing
 from preprocessing.expand_short_form_words import expand_short_form_preprocessing
 from preprocessing.lemmatization import lemmatization_preprocessing
 from preprocessing.preprocessingFunctions import (convert_to_lowercase,
@@ -31,8 +31,9 @@ from models.logistic_regression import logistic_regression
 from models.nn import nn
 
 preprocessing_not_done: bool = False
-feature_extraction: bool = True
-model_training: bool = False
+feature_extraction: bool = False
+model_training: bool = True # False
+
 if preprocessing_not_done:
     cont: Contractions = Contractions('/Users/yuwen/Desktop/NUS/Year5Sem2/CS4248/Project/GoogleNews-vectors-negative300.bin.gz')
     with open('/Users/yuwen/Desktop/NUS/Year5Sem2/CS4248/Project/CS4248-Team23/preprocessing/slang.txt', 'r') as myCSVfile:
@@ -125,13 +126,16 @@ def feature_engineering(data: pd.DataFrame):
 def feature_engineering2(X_train: pd.DataFrame):
     X_train_feature = feature_engineering(X_train)
 
-    n_gram_feature: bool = False
+    n_gram_feature: bool = True
     word_embedding: bool = False
 
     if n_gram_feature:
-        X_train_tfidf = ngram_feature(X_train['text'])
-        X_train_feature = sp.sparse.hstack((X_train_tfidf, X_train_feature))
-    
+        vectorizer = TfidfVectorizer(max_features=1000, stop_words="english", ngram_range=(1, 6))
+        X_train_tfidf = vectorizer.fit_transform(X_train['text'])
+        X_train_feature = pd.concat([X_train_feature, pd.DataFrame(data=X_train_tfidf.todense(), columns=vectorizer.get_feature_names())], axis=1)
+        # X_train_tfidf = ngram_feature(X_train['text'])
+        # X_train_feature = sp.sparse.hstack((X_train_tfidf, X_train_feature))
+
     if word_embedding:
         X_train_word_embedding = word_embeddings_feature(X_train['text'])
         X_train_feature = sp.sparse.hstack((X_train_word_embedding, X_train_feature))
@@ -153,7 +157,7 @@ def train_model(model, train_features: pd.DataFrame, validation_features: pd.Dat
     Write your functions in separate python files in folder models and import them here to use
     '''
     f1_scorer = make_scorer(f1_score, average='macro')
-    naive_bayes: bool = False
+    naive_bayes: bool = True # False
     logistic: bool = False
     neural_network: bool = False
 
@@ -184,9 +188,11 @@ def main():
     '''
     old_train: pd.DataFrame = pd.read_csv('data/v6_remove_punctuation_remove_non_english_correct_spelling_replace_short_form_slang.csv')
     old_train = old_train.dropna(axis = 0, subset=['text'], inplace=False)
+    # print(old_train.head()) # 35 columns
     label: pd.Series = old_train['label']
     train: pd.DataFrame = deepcopy(old_train)
     print("loaded data")
+
     if preprocessing_not_done:
         flag_names: list = ["lowercased","remove_punctuation","remove_newline","remove_non_english","remove_digit","correct_spelling","expand_contraction",
             "replace_short_form_slang","remove_stopwords","lemmatization","stemming"]
@@ -206,13 +212,20 @@ def main():
     if feature_extraction:
         print("start feature extraction")
         train_features: pd.DataFrame = feature_engineering2(train)
-        train_features.to_csv('features/bow.csv', index=False)
+        train_features.to_csv('features/some_name.csv', index=False)
         print("finish features")
     else: 
-        train_features: pd.DataFrame = pd.read_csv('features/singlish_negativity.csv')
+        # train_features: pd.DataFrame = pd.read_csv('features/singlish_negativity.csv')
+        # train_features: pd.DataFrame = pd.read_csv('features/bow.csv')
+        train_features: pd.DataFrame = pd.read_csv('features/tfidf.csv')
         # uncomment and repeat the following row to input multiple feature files and concatenate the features into one dataframe
         # train_features = pd.concat([train_features, pd.read_csv('features/<your feature name>.csv')], axis=1)
+        # train_features = pd.concat([train_features, pd.read_csv('features/bow.csv')], axis=1)
         print("loaded features")
+
+    print(type(train_features))
+    print(train_features.head())
+    print(train_features.info())
 
     if model_training:
         # split data into train, validation, test set
@@ -238,11 +251,11 @@ def main():
         score2: float = f1_score(test_label, y_pred, average='macro')
         print('score on test = {}'.format(score2))
 
-        row: dict = dict(zip(flag_names, flags))
-        row['training_score'] = score
-        row['test_score'] = score2
-        scores = scores.append(row, ignore_index=True)
-        scores.to_csv('preprocessing/scores.csv', index=False)
+        # row: dict = dict(zip(flag_names, flags))
+        # row['training_score'] = score
+        # row['test_score'] = score2
+        # scores = scores.append(row, ignore_index=True)
+        # scores.to_csv('preprocessing/scores.csv', index=False)
 
 # Allow the main class to be invoked if run as a file.
 if __name__ == "__main__":
