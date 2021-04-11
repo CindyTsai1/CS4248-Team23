@@ -11,6 +11,7 @@ from sklearn.metrics import f1_score, make_scorer
 from sklearn.model_selection import train_test_split
 from sklearn.feature_extraction.text import CountVectorizer, TfidfVectorizer
 from sklearn.naive_bayes import MultinomialNB
+from sklearn.linear_model import LogisticRegression
 from copy import deepcopy
 
 from features.bow import bow_feature
@@ -34,7 +35,7 @@ from models.nn import nn
 preprocessing_not_done: bool = False
 feature_extraction: bool = False # refers to feature extraction before splitting of data (i.e. does not include bow/tfidf)
 bow: bool = False # set specifically for bow
-tfidf: bool = True # set specifically for tfidf
+tfidf: bool = False # set specifically for tfidf
 model_training: bool = True # False
 
 if preprocessing_not_done:
@@ -161,8 +162,8 @@ def train_model(model, train_features: pd.DataFrame, validation_features: pd.Dat
     Write your functions in separate python files in folder models and import them here to use
     '''
     f1_scorer = make_scorer(f1_score, average='macro')
-    naive_bayes: bool = True # False
-    logistic: bool = False
+    naive_bayes: bool = False # True # False
+    logistic: bool = True 
     neural_network: bool = False
 
     if naive_bayes:
@@ -170,7 +171,8 @@ def train_model(model, train_features: pd.DataFrame, validation_features: pd.Dat
         model = MultinomialNB().fit(train_features, train_label)
     elif logistic:
         print("logistic regression")
-        model = logistic_regression(train_features, train_label, f1_scorer)
+        model = LogisticRegression().fit(train_features, train_label) # simple testing (checking that embedding code works)
+        # model = logistic_regression(train_features, train_label, f1_scorer)
     elif neural_network:
         print("neural network")
         model = nn(train_features, train_label, validation_features, validation_label)
@@ -226,7 +228,18 @@ def main():
         
         # uncomment and repeat the following row to input multiple feature files and concatenate the features into one dataframe
         # train_features = pd.concat([train_features, pd.read_csv('features/<your feature name>.csv')], axis=1)
+
+        ## -- uncomment to include Singlish Negativity  --
         train_features = pd.concat([train_features, pd.read_csv('features/singlish_negativity.csv')], axis=1)
+
+        ## -- uncomment to include embedding_original --
+        embeddings = pd.read_csv('features/pt_bert_embeddings_renamed.csv')[['embedding_original']] # renamed cos 'text' already in train_features
+        embeddings['embedding_original'] = embeddings['embedding_original'].apply(lambda x: x[3:-2]) # take away [[ ....]] the brackets
+        embeddings = embeddings['embedding_original'].str.split(expand=True).astype(float) # split string, convert type
+        train_features = pd.concat([train_features, embeddings], axis=1)
+
+        # print(train_features.head())
+        # print(train_features.info())
         print("loaded features (Part 1)")
 
     # split data into train, validation, test set
