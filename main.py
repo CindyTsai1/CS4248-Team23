@@ -1,9 +1,9 @@
 
 import csv
-from models.logistic_regression import logistic_regression
 from os import remove
 from re import T
 
+import numpy as np
 import pandas as pd
 import scipy as sp
 # from pycontractions import Contractions
@@ -18,6 +18,7 @@ from features.bow import bow_feature
 from features.ngram import ngram_feature
 from features.word_embeddings import word_embeddings_feature
 from features.singlish import singlish_feature
+from features.bert_embeddings import bert_embeddings_feature
 # from preprocessing.correct_spelling import correct_spelling_preprocessing
 # from preprocessing.expand_contraction import expand_contraction_preprocessing
 from preprocessing.expand_short_form_words import expand_short_form_preprocessing
@@ -37,6 +38,12 @@ feature_extraction: bool = False # refers to feature extraction before splitting
 bow: bool = False # set specifically for bow
 tfidf: bool = False # set specifically for tfidf
 model_training: bool = True # False
+num_classes: int = 5 # 5 levels of negativity
+
+# models - set only one of it to true
+naive_bayes: bool = False # True # False
+logistic: bool = False
+neural_network: bool = True
 
 if preprocessing_not_done:
     cont: Contractions = Contractions('/Users/yuwen/Desktop/NUS/Year5Sem2/CS4248/Project/GoogleNews-vectors-negative300.bin.gz')
@@ -162,9 +169,6 @@ def train_model(model, train_features: pd.DataFrame, validation_features: pd.Dat
     Write your functions in separate python files in folder models and import them here to use
     '''
     f1_scorer = make_scorer(f1_score, average='macro')
-    naive_bayes: bool = False # True # False
-    logistic: bool = True 
-    neural_network: bool = False
 
     if naive_bayes:
         print("naive bayes")
@@ -175,10 +179,12 @@ def train_model(model, train_features: pd.DataFrame, validation_features: pd.Dat
         # model = logistic_regression(train_features, train_label, f1_scorer)
     elif neural_network:
         print("neural network")
-        model = nn(train_features, train_label, validation_features, validation_label)
+        model = nn(train_features, train_label, validation_features, validation_label, num_classes)
     return model
 
 def predict(model: MultinomialNB, X_test_features: pd.DataFrame):
+    if neural_network:
+      return pd.Series(np.argmax(model.predict(X_test_features), axis=1))
     return pd.Series(model.predict(X_test_features))
 
 def generate_result(test: pd.DataFrame, y_pred: pd.Series, filename: str):
@@ -232,11 +238,10 @@ def main():
         ## -- uncomment to include Singlish Negativity  --
         train_features = pd.concat([train_features, pd.read_csv('features/singlish_negativity.csv')], axis=1)
 
-        ## -- uncomment to include embedding_original --
-        embeddings = pd.read_csv('features/pt_bert_embeddings_renamed.csv')[['embedding_original']] # renamed cos 'text' already in train_features
-        embeddings['embedding_original'] = embeddings['embedding_original'].apply(lambda x: x[3:-2]) # take away [[ ....]] the brackets
-        embeddings = embeddings['embedding_original'].str.split(expand=True).astype(float) # split string, convert type
-        train_features = pd.concat([train_features, embeddings], axis=1)
+        ## -- uncomment to include bert embeddings --
+        ## use 'pt' for original BERT, 'nw' for NUSWhispers fine-tuned BERT, or 
+        ## 'genw' for BERT fine-tuned on both GoEmotions and NUSWhispers.
+        train_features = pd.concat([train_features, bert_embeddings_feature('nw')], axis=1)
 
         # print(train_features.head())
         # print(train_features.info())
@@ -264,12 +269,16 @@ def main():
         validation_features.drop(['text'], axis=1, inplace=True)
         test_features.drop(['text'], axis=1, inplace=True)
 
+    if neural_network and isinstance(train_features, sp.sparse.coo.coo_matrix):
+        train_features = pd.DataFrame(train_features.todense())
+        validation_features = pd.DataFrame(validation_features.todense())
+        test_features = pd.DataFrame(test_features.todense())
+    
     if model_training:
         # The following was used when reloading the model to further train
         # model = load_model('my_model')
         # GoEmotions pre-trained model can be imported here
         model = None
-
         model = train_model(model, train_features, validation_features, train_label, validation_label)
         # test your model
         print("start prediction")
