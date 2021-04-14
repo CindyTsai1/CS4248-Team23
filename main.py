@@ -18,8 +18,8 @@ from features.bow import bow_feature
 from features.ngram import ngram_feature
 from features.word_embeddings import word_embeddings_feature
 from features.singlish import singlish_feature
-from features.bert_embeddings import bert_embeddings_feature
-# from preprocessing.correct_spelling import correct_spelling_preprocessing
+#from features.bert_embeddings import bert_embeddings_feature
+from preprocessing.correct_spelling import correct_spelling_preprocessing
 # from preprocessing.expand_contraction import expand_contraction_preprocessing
 from preprocessing.expand_short_form_words import expand_short_form_preprocessing
 from preprocessing.lemmatization import lemmatization_preprocessing
@@ -33,11 +33,11 @@ from preprocessing.remove_non_english import remove_non_english_preprocessing
 from models.logistic_regression import logistic_regression
 from models.nn import nn
 
-preprocessing_not_done: bool = False
+preprocessing_not_done: bool = True
 feature_extraction: bool = False # refers to feature extraction before splitting of data (i.e. does not include bow/tfidf)
 bow: bool = False # set specifically for bow
 tfidf: bool = False # set specifically for tfidf
-model_training: bool = True # False
+model_training: bool = False # False
 num_classes: int = 5 # 5 levels of negativity
 
 # models - set only one of it to true
@@ -46,7 +46,7 @@ logistic: bool = False
 neural_network: bool = True
 
 if preprocessing_not_done:
-    cont: Contractions = Contractions('/Users/yuwen/Desktop/NUS/Year5Sem2/CS4248/Project/GoogleNews-vectors-negative300.bin.gz')
+    # cont: Contractions = Contractions('/Users/yuwen/Desktop/NUS/Year5Sem2/CS4248/Project/GoogleNews-vectors-negative300.bin.gz')
     with open('/Users/yuwen/Desktop/NUS/Year5Sem2/CS4248/Project/CS4248-Team23/preprocessing/slang.txt', 'r') as myCSVfile:
         short_form_dict:dict = dict([pair for pair in csv.reader(myCSVfile, delimiter="=")])
 def preprocessing(sentence: str, flags: list):
@@ -80,6 +80,9 @@ def preprocessing(sentence: str, flags: list):
     if expand_contraction:
         sentence = expand_contraction_preprocessing(sentence, cont)
     
+    if remove_stopwords:
+        sentence = ' '.join(stopwords_removal(sentence.split()))
+    
     if remove_punctuation:
         sentence = ' '.join(punctuation_removal(sentence.split()))
 
@@ -97,9 +100,6 @@ def preprocessing(sentence: str, flags: list):
     
     if replace_short_form_slang:
         sentence = expand_short_form_preprocessing(sentence, short_form_dict)
-
-    if remove_stopwords:
-        sentence = ' '.join(stopwords_removal(sentence.split()))
 
     if lemmatization:
         sentence = lemmatization_preprocessing(sentence)
@@ -198,7 +198,8 @@ def main():
     If loading feature csv, set feature_extraction to False and change the loaded feature file name
     If training model, set model_training to True
     '''
-    old_train: pd.DataFrame = pd.read_csv('data/v6_remove_punctuation_remove_non_english_correct_spelling_replace_short_form_slang.csv')
+    #old_train: pd.DataFrame = pd.read_csv('data/v6_remove_punctuation_remove_non_english_correct_spelling_replace_short_form_slang.csv')
+    old_train: pd.DataFrame = pd.read_csv('data/v6_.csv')
     old_train = old_train.dropna(axis = 0, subset=['text'], inplace=False)
     label: pd.Series = old_train['label']
     train: pd.DataFrame = deepcopy(old_train)
@@ -210,12 +211,12 @@ def main():
         #cont.load_models()
         print("loaded contraction model")
         scores: pd.DataFrame = pd.DataFrame(pd.read_csv('preprocessing/scores.csv'), columns=flag_names+["training_score","test_score"])
-        flags = [False,True,False,True,False,True,False,False,True,True,False]
+        flags = [False,True,False,True,False,True,False,True,True,False,False]
         # pre-processing
         print("start preprocessing")
         train['text'] = old_train['text'].copy()
         train['text'] = train['text'].apply(preprocessing, args=(flags,))
-        filename = "Project/CS4248-Team23/data/v6_" + '_'.join(filter(lambda a: flags[flag_names.index(a)], flag_names)) + ".csv"
+        filename = "data/v6_" + '_'.join(filter(lambda a: flags[flag_names.index(a)], flag_names)) + ".csv"
         train.to_csv(filename, index=False)
         print("stored preprocessing")
         
