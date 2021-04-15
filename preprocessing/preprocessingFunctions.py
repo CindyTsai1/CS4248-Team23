@@ -31,7 +31,7 @@ def punctuation_removal(tokens):
 def stopwords_removal(tokens):
     tokenized_no_stopwords = []
     for token in tokens:
-        if not token in stopwords.words('english'):
+        if not token.lower() in stopwords.words('english'):
             tokenized_no_stopwords.append(token)
     return tokenized_no_stopwords
 

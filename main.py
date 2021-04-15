@@ -211,7 +211,7 @@ def main():
         #cont.load_models()
         print("loaded contraction model")
         scores: pd.DataFrame = pd.DataFrame(pd.read_csv('preprocessing/scores.csv'), columns=flag_names+["training_score","test_score"])
-        flags = [False,True,False,True,False,True,False,True,True,False,False]
+        flags = [False,False,False,True,False,True,False,True,False,False,False]
         # pre-processing
         print("start preprocessing")
         train['text'] = old_train['text'].copy()
