@@ -4,6 +4,7 @@ from os import remove
 from re import T, compile, escape, split
 
 import numpy as np
+from numpy.core.numeric import True_
 import pandas as pd
 import scipy as sp
 # from pycontractions import Contractions
@@ -33,17 +34,18 @@ from preprocessing.remove_link import remove_link_preprocessing
 from preprocessing.remove_newline import remove_newline_preprocessing
 from preprocessing.remove_non_english import remove_non_english_preprocessing
 from models.nn import nn
+from models.logistic_regression import logistic_regression
 
 preprocessing_not_done: bool = False
-feature_extraction: bool = True # refers to feature extraction before splitting of data (i.e. does not include bow/tfidf)
-bow: bool = False # set specifically for bow
-tfidf: bool = False # set specifically for tfidf
-model_training: bool = False # False
+feature_extraction: bool = False # refers to feature extraction before splitting of data (i.e. does not include bow/tfidf)
+bow: bool = True # set specifically for bow
+tfidf: bool = True # set specifically for tfidf
+model_training: bool = True # False
 num_classes: int = 5 # 5 levels of negativity
 
 # models - set only one of it to true
 naive_bayes: bool = False # True # False
-logistic: bool = False
+logistic: bool = True
 neural_network: bool = False
 
 if preprocessing_not_done:
@@ -143,17 +145,16 @@ def feature_engineering2(X_train: pd.DataFrame, X_validation: pd.DataFrame, X_te
     X_validation_feature: pd.DataFrame = pd.DataFrame()
     X_test_feature: pd.DataFrame = pd.DataFrame()
 
-    # bow and tfidf booleans moved to the top of the source code now
-    # bow: bool = False
-    # tfidf: bool = False
-
     if bow:
         print("bow")
         X_train_feature, X_validation_feature, X_test_feature = bow_feature(X_train, X_validation, X_test)
        
-    elif tfidf:
+    if tfidf:
         print("tfidf")
-        X_train_feature, X_validation_feature, X_test_feature = ngram_feature(X_train, X_validation, X_test)
+        X_train_tfidf, X_validation_tfidf, X_test_tfidf = ngram_feature(X_train, X_validation, X_test)
+        X_train_feature = sp.sparse.hstack((X_train_feature, X_train_tfidf))
+        X_validation_feature = sp.sparse.hstack((X_validation_feature, X_validation_tfidf))
+        X_test_feature = sp.sparse.hstack((X_test_feature, X_test_tfidf))
 
     return X_train_feature, X_validation_feature, X_test_feature
    
@@ -178,8 +179,8 @@ def train_model(model, train_features: pd.DataFrame, validation_features: pd.Dat
         model = MultinomialNB().fit(train_features, train_label)
     elif logistic:
         print("logistic regression")
-        model = LogisticRegression().fit(train_features, train_label) # simple testing (checking that embedding code works)
-        # model = logistic_regression(train_features, train_label, f1_scorer)
+        # model = LogisticRegression().fit(train_features, train_label) # simple testing (checking that embedding code works)
+        model = logistic_regression(train_features, train_label, f1_scorer)
     elif neural_network:
         print("neural network")
         model = nn(train_features, train_label, validation_features, validation_label, num_classes)
@@ -304,9 +305,11 @@ def main():
         print("start prediction")
         y_pred: pd.Series = predict(model, train_features)
         train_metrics = scoring('train', train_label, y_pred)
+        print(train_metrics.values())
 
         y_pred: pd.Series = predict(model, test_features)
         test_metrics = scoring('test', test_label, y_pred)
+        print(test_metrics.values())
         
         # row: dict = dict(zip(flag_names, flags))
         # scores = scores.append({**row,**train_metrics,**test_metrics}, ignore_index=True)
