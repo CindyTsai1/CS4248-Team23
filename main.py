@@ -14,8 +14,9 @@ from sklearn.naive_bayes import MultinomialNB
 from sklearn.linear_model import LogisticRegression
 from copy import deepcopy
 from imblearn.metrics import macro_averaged_mean_absolute_error
-import nltk
 import string
+import spacy
+from autocorrect import Speller
 
 from features.bow import bow_feature
 from features.ngram import ngram_feature
@@ -50,6 +51,8 @@ if preprocessing_not_done:
     with open('/Users/yuwen/Desktop/NUS/Year5Sem2/CS4248/Project/CS4248-Team23/preprocessing/slang.txt', 'r') as myCSVfile:
         short_form_dict:dict = dict([pair for pair in csv.reader(myCSVfile, delimiter="=")])
     regex = compile('[%s]' % escape(string.punctuation+"“”‘’"))
+    nlp = spacy.load('en_core_web_sm',disable=['parser', 'ner'])
+    spell = Speller(lang='en')
 def preprocessing(sentence: str, flags: list):
     ''' 
     takes in a row of data, preprocess it, return the processed row.
@@ -62,10 +65,10 @@ def preprocessing(sentence: str, flags: list):
     Can write the functions in a separate file, import and execute here / or just write here since we didn't split this job
     '''
     lowercased: bool = flags[0]
-    # expand_contraction: bool = flags[1]
-    # remove_punctuation: bool = flags[2]
+    expand_contraction: bool = flags[1]
+    remove_punctuation: bool = flags[2]
     remove_stopwords: bool = flags[3]
-    # remove_non_english: bool = flags[4]
+    remove_non_english: bool = flags[4]
     remove_digit: bool = flags[5]
     correct_spelling: bool = flags[6]
     replace_short_form_slang: bool = flags[7]
@@ -87,16 +90,16 @@ def preprocessing(sentence: str, flags: list):
     #     sentence = ' '.join(tokens)
     # elif remove_stopwords:
     #     sentence = ' '.join(stopwords_removal(sentence.split()))
-
-    # if remove_non_english:
-    #     sentence = remove_non_english_preprocessing(sentence)
+        
+    if remove_non_english:
+        sentence = remove_non_english_preprocessing(sentence)
 
     if remove_digit:
         sentence = remove_digit_preprocessing(sentence)
 
     if correct_spelling:
-        sentence = correct_spelling_preprocessing(sentence)
-    
+        sentence = correct_spelling_preprocessing(sentence, spell)
+
     if replace_short_form_slang:
         sentence = expand_short_form_preprocessing(sentence, short_form_dict)
         if remove_stopwords:
@@ -105,7 +108,7 @@ def preprocessing(sentence: str, flags: list):
             sentence = convert_to_lowercase(sentence)
 
     if lemmatization:
-        sentence = lemmatization_preprocessing(sentence)
+        sentence = lemmatization_preprocessing(sentence, nlp)
 
     return sentence.strip()
 
@@ -114,7 +117,7 @@ def feature_engineering(data: pd.DataFrame):
     Flags to be written here
     n_gram_feature: bool = False
     '''
-    singlish: bool = False
+    singlish: bool = True
     word_embedding: bool = False
     ''' 
     Format:
@@ -209,8 +212,7 @@ def main():
     If loading feature csv, set feature_extraction to False and change the loaded feature file name
     If training model, set model_training to True
     '''
-    #old_train: pd.DataFrame = pd.read_csv('data/v6_remove_punctuation_remove_non_english_correct_spelling_replace_short_form_slang.csv')
-    old_train: pd.DataFrame = pd.read_csv('data/v7_expand_contraction_remove_punctuation_remove_stopwords_remove_non_english.csv')
+    old_train: pd.DataFrame = pd.read_csv('data/v7_expand_contraction_remove_punctuation.csv')
     old_train = old_train.dropna(axis = 0, subset=['text'], inplace=False)
     label: pd.Series = old_train['label']
     train: pd.DataFrame = deepcopy(old_train)
@@ -225,7 +227,7 @@ def main():
             pd.read_csv('preprocessing/scores1.csv'), 
             columns=flag_names+["train_f1_score","train_MAE","train_acc","test_f1_score","test_MAE","test_acc"]
         )
-        flags = [False,True,True,True,True,False,True,False,False]
+        flags = [False,True,True,False,True,False,True,True,True]
         # pre-processing
         print("start preprocessing")
         train['text'] = old_train['text'].copy()
@@ -238,7 +240,7 @@ def main():
     if feature_extraction:
         print("start feature extraction part 1 (before splitting of data)")
         train_features: pd.DataFrame = feature_engineering(train)
-        train_features.to_csv('features/bow1.csv', index=False) # take note of overwriting ~ 
+        train_features.to_csv('features/singlish_negativity1.csv', index=False) # take note of overwriting ~ 
 
         # add 'text' col to train_features for bow/tfidf in feature extraction part II
         train_features = pd.concat([train_features, train['text']], axis=1)
@@ -252,7 +254,7 @@ def main():
         # train_features = pd.concat([train_features, pd.read_csv('features/<your feature name>.csv')], axis=1)
 
         ## -- uncomment to include Singlish Negativity  --
-        # train_features = pd.concat([train_features, pd.read_csv('features/singlish_negativity.csv')], axis=1)
+        # train_features = pd.concat([train_features, pd.read_csv('features/singlish_negativity1.csv')], axis=1)
 
         ## -- uncomment to include bert embeddings --
         ## use 'pt' for original BERT, 'nw' for NUSWhispers fine-tuned BERT, or 
@@ -312,4 +314,4 @@ def main():
 # Allow the main class to be invoked if run as a file.
 if __name__ == "__main__":
     main()
-    #print(preprocessing("   I am sorry SpongeBob    ", [False,True,True,True,False,False,False,False,False]))
+    # print(preprocessing(" do not chase after who you like  If you are meant to be together  You Will  This is what most of us have been told by friends or family after they themselves have been through the hardship  But you know what  this just does not make sense lol  I have personally seen and know many friends who are self aware of themselves and tried their utmost best to improve themselves in many way possibles and yet still unable to get any form of romantic love  The thing is  more often than not  these guys girls literally have to do the chasing first in order for them to secure themselves a relationship  Stop telling us that love need not be chased and if 2 people truly like each other  they will come to be together  This is utter nonsense imo lol  Go out there and chase for who you like  just like how you would chase for your dream jobs or passion etcc     ", [False,True,True,False,True,False,True,True,True]))
