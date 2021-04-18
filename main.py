@@ -34,15 +34,15 @@ from preprocessing.remove_newline import remove_newline_preprocessing
 from preprocessing.remove_non_english import remove_non_english_preprocessing
 from models.nn import nn
 
-preprocessing_not_done: bool = True
-feature_extraction: bool = False # refers to feature extraction before splitting of data (i.e. does not include bow/tfidf)
-bow: bool = True # set specifically for bow
+preprocessing_not_done: bool = False
+feature_extraction: bool = True # refers to feature extraction before splitting of data (i.e. does not include bow/tfidf)
+bow: bool = False # set specifically for bow
 tfidf: bool = False # set specifically for tfidf
-model_training: bool = True # False
+model_training: bool = False # False
 num_classes: int = 5 # 5 levels of negativity
 
 # models - set only one of it to true
-naive_bayes: bool = True # True # False
+naive_bayes: bool = False # True # False
 logistic: bool = False
 neural_network: bool = False
 
@@ -212,7 +212,8 @@ def main():
     If loading feature csv, set feature_extraction to False and change the loaded feature file name
     If training model, set model_training to True
     '''
-    old_train: pd.DataFrame = pd.read_csv('data/v7_expand_contraction_remove_punctuation.csv')
+    old_train: pd.DataFrame = pd.read_csv('data/v7_expand_contraction_remove_punctuation_remove_stopwords_remove_non_english_correct_spelling_replace_short_form_slang_lemmatization.csv')
+    
     old_train = old_train.dropna(axis = 0, subset=['text'], inplace=False)
     label: pd.Series = old_train['label']
     train: pd.DataFrame = deepcopy(old_train)
@@ -227,7 +228,7 @@ def main():
             pd.read_csv('preprocessing/scores1.csv'), 
             columns=flag_names+["train_f1_score","train_MAE","train_acc","test_f1_score","test_MAE","test_acc"]
         )
-        flags = [False,True,True,False,True,False,True,True,True]
+        flags = [False,False,True,True,True,False,True,True,True]
         # pre-processing
         print("start preprocessing")
         train['text'] = old_train['text'].copy()
@@ -307,9 +308,9 @@ def main():
         y_pred: pd.Series = predict(model, test_features)
         test_metrics = scoring('test', test_label, y_pred)
         
-        row: dict = dict(zip(flag_names, flags))
-        scores = scores.append({**row,**train_metrics,**test_metrics}, ignore_index=True)
-        scores.to_csv('preprocessing/scores1.csv', index=False)
+        # row: dict = dict(zip(flag_names, flags))
+        # scores = scores.append({**row,**train_metrics,**test_metrics}, ignore_index=True)
+        # scores.to_csv('preprocessing/scores1.csv', index=False)
 
 # Allow the main class to be invoked if run as a file.
 if __name__ == "__main__":
