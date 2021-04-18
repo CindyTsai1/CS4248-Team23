@@ -1,8 +1,9 @@
 from sklearn.feature_extraction.text import CountVectorizer
 import pandas as pd
+from nltk.corpus import stopwords
 
 def bow_feature(X_train: pd.Series, X_validation: pd.Series, X_test: pd.Series):
-    vectorizer = CountVectorizer(max_features=1000)
+    vectorizer = CountVectorizer(max_features=1000, lowercase=False)
     X_train_bow = vectorizer.fit_transform(X_train['text'])
     X_validation_bow = vectorizer.transform(X_validation['text'])
     X_test_bow = vectorizer.transform(X_test['text'])
