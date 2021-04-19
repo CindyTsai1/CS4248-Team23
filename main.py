@@ -37,16 +37,16 @@ from models.nn import nn
 from models.logistic_regression import logistic_regression
 
 preprocessing_not_done: bool = False
-feature_extraction: bool = True # refers to feature extraction before splitting of data (i.e. does not include bow/tfidf)
-bow: bool = False # set specifically for bow
+feature_extraction: bool = False # refers to feature extraction before splitting of data (i.e. does not include bow/tfidf)
+bow: bool = True # set specifically for bow
 tfidf: bool = False # set specifically for tfidf
-model_training: bool = False # False
+model_training: bool = True # False
 num_classes: int = 5 # 5 levels of negativity
 
 # models - set only one of it to true
 naive_bayes: bool = False # True # False
 logistic: bool = False
-neural_network: bool = False
+neural_network: bool = True
 
 if preprocessing_not_done:
     # cont: Contractions = Contractions('/Users/yuwen/Desktop/NUS/Year5Sem2/CS4248/Project/GoogleNews-vectors-negative300.bin.gz')
@@ -256,8 +256,7 @@ def main():
         # train_features = pd.concat([train_features, pd.read_csv('features/<your feature name>.csv')], axis=1)
 
         ## -- uncomment to include Singlish Negativity  --
-        # train_features = pd.concat([train_features, pd.read_csv('features/singlish_negativity1.csv')], axis=1)
-
+        # train_features = pd.concat([train_features.reset_index(drop=True), pd.read_csv('features/singlish_negativity1.csv').reset_index(drop=True)], axis=1)
         ## -- uncomment to include bert embeddings --
         ## use 'pt' for original BERT, 'nw' for NUSWhispers fine-tuned BERT, or 
         ## 'genw' for BERT fine-tuned on both GoEmotions and NUSWhispers.
