@@ -37,15 +37,15 @@ from models.nn import nn
 from models.logistic_regression import logistic_regression
 
 preprocessing_not_done: bool = False
-feature_extraction: bool = False # refers to feature extraction before splitting of data (i.e. does not include bow/tfidf)
-bow: bool = True # set specifically for bow
-tfidf: bool = True # set specifically for tfidf
-model_training: bool = True # False
+feature_extraction: bool = True # refers to feature extraction before splitting of data (i.e. does not include bow/tfidf)
+bow: bool = False # set specifically for bow
+tfidf: bool = False # set specifically for tfidf
+model_training: bool = False # False
 num_classes: int = 5 # 5 levels of negativity
 
 # models - set only one of it to true
 naive_bayes: bool = False # True # False
-logistic: bool = True
+logistic: bool = False
 neural_network: bool = False
 
 if preprocessing_not_done:
@@ -213,7 +213,7 @@ def main():
     If loading feature csv, set feature_extraction to False and change the loaded feature file name
     If training model, set model_training to True
     '''
-    old_train: pd.DataFrame = pd.read_csv('data/v7_expand_contraction_remove_punctuation_remove_stopwords_remove_non_english_correct_spelling_replace_short_form_slang_lemmatization.csv')
+    old_train: pd.DataFrame = pd.read_csv('data/v7_expand_contraction_remove_punctuation_remove_non_english_correct_spelling_replace_short_form_slang_lemmatization1.csv')
     
     old_train = old_train.dropna(axis = 0, subset=['text'], inplace=False)
     label: pd.Series = old_train['label']
