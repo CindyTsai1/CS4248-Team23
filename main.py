@@ -44,9 +44,9 @@ model_training: bool = True # False
 num_classes: int = 5 # 5 levels of negativity
 
 # models - set only one of it to true
-naive_bayes: bool = False # True # False
+naive_bayes: bool = True # True # False
 logistic: bool = False
-neural_network: bool = True
+neural_network: bool = False
 
 if preprocessing_not_done:
     # cont: Contractions = Contractions('/Users/yuwen/Desktop/NUS/Year5Sem2/CS4248/Project/GoogleNews-vectors-negative300.bin.gz')
@@ -213,7 +213,7 @@ def main():
     If loading feature csv, set feature_extraction to False and change the loaded feature file name
     If training model, set model_training to True
     '''
-    old_train: pd.DataFrame = pd.read_csv('data/v7_expand_contraction_remove_punctuation_remove_non_english_correct_spelling_replace_short_form_slang_lemmatization1.csv')
+    old_train: pd.DataFrame = pd.read_csv('data/v6_remove_punctuation_remove_non_english_correct_spelling_replace_short_form_slang_remove_stopwords.csv')
     
     old_train = old_train.dropna(axis = 0, subset=['text'], inplace=False)
     label: pd.Series = old_train['label']
