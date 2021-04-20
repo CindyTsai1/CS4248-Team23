@@ -17,18 +17,18 @@ from copy import deepcopy
 from imblearn.metrics import macro_averaged_mean_absolute_error
 import string
 import spacy
-from autocorrect import Speller
+# from autocorrect import Speller
 
 from features.bow import bow_feature
 from features.ngram import ngram_feature
 from features.word_embeddings import word_embeddings_feature
 from features.singlish import singlish_feature
-#from features.bert_embeddings import bert_embeddings_feature
-from preprocessing.correct_spelling import correct_spelling_preprocessing
+from features.bert_embeddings import bert_embeddings_feature
+# from preprocessing.correct_spelling import correct_spelling_preprocessing
 #from preprocessing.expand_contraction import expand_contraction_preprocessing
 from preprocessing.expand_short_form_words import expand_short_form_preprocessing
 from preprocessing.lemmatization import lemmatization_preprocessing
-from preprocessing.preprocessingFunctions import convert_to_lowercase, stopwords_removal
+# from preprocessing.preprocessingFunctions import convert_to_lowercase, stopwords_removal
 from preprocessing.remove_digit import remove_digit_preprocessing
 from preprocessing.remove_link import remove_link_preprocessing
 from preprocessing.remove_newline import remove_newline_preprocessing
@@ -38,14 +38,14 @@ from models.logistic_regression import logistic_regression
 
 preprocessing_not_done: bool = False
 feature_extraction: bool = False # refers to feature extraction before splitting of data (i.e. does not include bow/tfidf)
-bow: bool = True # set specifically for bow
+bow: bool = False # set specifically for bow
 tfidf: bool = False # set specifically for tfidf
 model_training: bool = True # False
 num_classes: int = 5 # 5 levels of negativity
 
 # models - set only one of it to true
-naive_bayes: bool = True # True # False
-logistic: bool = False
+naive_bayes: bool = False # True # False
+logistic: bool = True
 neural_network: bool = False
 
 if preprocessing_not_done:
@@ -213,7 +213,8 @@ def main():
     If loading feature csv, set feature_extraction to False and change the loaded feature file name
     If training model, set model_training to True
     '''
-    old_train: pd.DataFrame = pd.read_csv('data/v6_remove_punctuation_remove_non_english_correct_spelling_replace_short_form_slang_remove_stopwords.csv')
+    # old_train: pd.DataFrame = pd.read_csv('data/v7_expand_contraction_remove_punctuation_remove_non_english_correct_spelling_replace_short_form_slang_lemmatization1.csv')
+    old_train: pd.DataFrame = pd.read_csv('data/v6_remove_punctuation_remove_non_english_correct_spelling_replace_short_form_slang.csv')
     
     old_train = old_train.dropna(axis = 0, subset=['text'], inplace=False)
     label: pd.Series = old_train['label']
@@ -255,12 +256,26 @@ def main():
         # uncomment and repeat the following row to input multiple feature files and concatenate the features into one dataframe
         # train_features = pd.concat([train_features, pd.read_csv('features/<your feature name>.csv')], axis=1)
 
+
         ## -- uncomment to include Singlish Negativity  --
-        # train_features = pd.concat([train_features.reset_index(drop=True), pd.read_csv('features/singlish_negativity1.csv').reset_index(drop=True)], axis=1)
+        train_features = pd.concat([train_features.reset_index(drop=True), pd.read_csv('features/singlish_negativity.csv').reset_index(drop=True)], axis=1)
+
+        ## -- uncomment to include question_mark  --
+        # train_features = pd.concat([train_features, pd.read_csv('features/question_mark_count.csv')], axis=1)
+
+        ## -- uncomment to include reply  --
+        # train_features = pd.concat([train_features, pd.read_csv('features/is_not_reply.csv')], axis=1)
+
+        ## -- uncomment to include sad_face  --
+        # train_features = pd.concat([train_features, pd.read_csv('features/is_sad_face.csv')], axis=1)
+        
         ## -- uncomment to include bert embeddings --
         ## use 'pt' for original BERT, 'nw' for NUSWhispers fine-tuned BERT, or 
-        ## 'genw' for BERT fine-tuned on both GoEmotions and NUSWhispers.
-        # train_features = pd.concat([train_features, bert_embeddings_feature('nw')], axis=1)
+        ## 'ge_nw' for BERT fine-tuned on both GoEmotions and NUSWhispers.
+     
+        # train_features = pd.concat([train_features.reset_index(drop=True), bert_embeddings_feature('pt').reset_index(drop=True)], axis=1)
+        # train_features = pd.concat([train_features.reset_index(drop=True), bert_embeddings_feature('nw').reset_index(drop=True)], axis=1)
+        # train_features = pd.concat([train_features.reset_index(drop=True), bert_embeddings_feature('ge_nw').reset_index(drop=True)], axis=1)
 
         # print(train_features.head())
         # print(train_features.info())
@@ -305,6 +320,8 @@ def main():
         y_pred: pd.Series = predict(model, train_features)
         train_metrics = scoring('train', train_label, y_pred)
         print(train_metrics.values())
+
+        print("\n")
 
         y_pred: pd.Series = predict(model, test_features)
         test_metrics = scoring('test', test_label, y_pred)
