@@ -16,7 +16,7 @@
 
 #### 3.1 Data Collection
 * [CS4248-Team23/data/scraper.py](https://github.com/CindyTsai1/CS4248-Team23/blob/main/data/scraper.py)
-* Dataset versions: CS4248-Team23/data/v*.csv
+* Dataset versions: [CS4248-Team23/data/v*.csv](https://github.com/CindyTsai1/CS4248-Team23/blob/main/data)
 
 #### EDA of dataset
 * [CS4248-Team23/EDA.ipynb](https://github.com/CindyTsai1/CS4248-Team23/blob/main/EDA.ipynb)
