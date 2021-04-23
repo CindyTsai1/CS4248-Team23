@@ -61,7 +61,7 @@ def remove_punc(df: pd.DataFrame):
     return df
 
 if False:
-    data: pd.DataFrame = pd.DataFrame(pd.read_csv("/Users/yuwen/Desktop/NUS/Year5Sem2/CS4248/Project/CS4248-Team23/data/singlish_raw.csv"), columns=[COLUMN0])
+    data: pd.DataFrame = pd.DataFrame(pd.read_csv("data/singlish_raw.csv"), columns=[COLUMN0])
     data = data.dropna(axis = 0, subset=[COLUMN0], inplace=False)
     data = data.drop(data[data[COLUMN0].map(str).map(lambda string: '[edit]' in string or ' - ' not in string)].index)
     data[COLUMN0] = data[COLUMN0].apply(data_clean)
@@ -72,9 +72,9 @@ if False:
     noMoreBracket: bool = False
     while not noMoreBracket:
         data, noMoreBracket = duplicate_words_with_extra_h(data,noMoreBracket)
-    data.to_csv("/Users/yuwen/Desktop/NUS/Year5Sem2/CS4248/Project/CS4248-Team23/data/singlish_1.csv", index=False)
+    data.to_csv("data/singlish_1.csv", index=False)
 
-data: pd.DataFrame = pd.DataFrame(pd.read_csv("/Users/yuwen/Desktop/NUS/Year5Sem2/CS4248/Project/CS4248-Team23/data/singlish_1.csv"), columns=[COLUMN0, COLUMN1])
+data: pd.DataFrame = pd.DataFrame(pd.read_csv("data/singlish_1.csv"), columns=[COLUMN0, COLUMN1])
 data['label'] = ''
 data[COLUMN0] = data[COLUMN0].apply(data_clean)
 data = duplicate_different_forms_of_same_word(data)
@@ -82,4 +82,4 @@ noMoreBracket: bool = False
 while not noMoreBracket:
     data, noMoreBracket = duplicate_words_with_extra_h(data,noMoreBracket)
 data = remove_punc(data)
-data.to_csv("/Users/yuwen/Desktop/NUS/Year5Sem2/CS4248/Project/CS4248-Team23/data/singlish_2.csv", index=False)
+data.to_csv("data/singlish_2.csv", index=False)

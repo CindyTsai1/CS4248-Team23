@@ -1,6 +1,6 @@
 import csv
 '''
-with open('/Users/yuwen/Desktop/NUS/Year5Sem2/CS4248/Project/CS4248-Team23/preprocessing/slang.txt', 'r') as myCSVfile:
+with open('preprocessing/slang.txt', 'r') as myCSVfile:
     short_form_dict = dict([pair for pair in csv.reader(myCSVfile, delimiter="=")])
 '''
 def expand_short_form_preprocessing(sentence: str, short_form_dict):

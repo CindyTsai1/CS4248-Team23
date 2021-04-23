@@ -21,7 +21,6 @@ from autocorrect import Speller
 
 from features.bow import bow_feature
 from features.ngram import ngram_feature
-from features.word_embeddings import word_embeddings_feature
 from features.singlish import singlish_feature
 from features.bert_embeddings import bert_embeddings_feature
 from preprocessing.correct_spelling import correct_spelling_preprocessing
@@ -49,8 +48,8 @@ logistic: bool = False
 neural_network: bool = True
 
 if preprocessing_not_done:
-    cont: Contractions = Contractions('/Users/yuwen/Desktop/NUS/Year5Sem2/CS4248/Project/GoogleNews-vectors-negative300.bin.gz')
-    with open('/Users/yuwen/Desktop/NUS/Year5Sem2/CS4248/Project/CS4248-Team23/preprocessing/slang.txt', 'r') as myCSVfile:
+    cont: Contractions = Contractions('../GoogleNews-vectors-negative300.bin.gz')
+    with open('preprocessing/slang.txt', 'r') as myCSVfile:
         short_form_dict:dict = dict([pair for pair in csv.reader(myCSVfile, delimiter="=")])
     regex = compile('[%s]' % escape(string.punctuation+"“”‘’"))
     nlp = spacy.load('en_core_web_sm',disable=['parser', 'ner'])
