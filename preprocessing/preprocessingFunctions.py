@@ -4,7 +4,9 @@ from nltk.tokenize import word_tokenize
 from nltk.tokenize import sent_tokenize
 from nltk.corpus import stopwords
 
-stopword_list = stopwords.words('english') + ["c'mon", 'tb', 'one', 'cn', 'indicated', 'course', 'thanks', 'inasmuch', 'av', 'ge', 'six', 'sd', 'owing', 
+stopword_list = stopwords.words('english')
+'''
+["c'mon", 'tb', 'one', 'cn', 'indicated', 'course', 'thanks', 'inasmuch', 'av', 'ge', 'six', 'sd', 'owing', 
 'hereupon', 'fifteen', 'gr', 'rq', 'let', 'changes', 'bd', 'thru', 'contain', 'sometimes', 'primarily', 'sixty', 'e3', 'vj', "here's", 'ca', 'stop', '3a', 
 'dx', 'gone', 'io', 'please', '0o', "he'll", 'resulted', 'nobody', 'gave', 'lj', 'various', 'insofar', 'ever', 'pf', 'fix', 'xv', 'k', 'pages', 'whole', 
 'sc', 'fl', 'im', 'y2', 'wherein', 'adj', 'regarding', 'eight', 'known', 'xx', 'clearly', 'nl', 'b2', 'itd', 'sent', 'date', 'per', 'vd', 'mt', 'kept', 
@@ -61,6 +63,7 @@ stopword_list = stopwords.words('english') + ["c'mon", 'tb', 'one', 'cn', 'indic
 'rd', 'believe', 'se', 'invention', 'fo', 'heres', 'pp', 'could', 'ga', 'nothing', 'besides', "it'd", 'aw', 'ey', 'ms', 'xi', 'thorough', 'gy', "there's", 
 'mainly', 'p', 'gj', 'take', 'across', 'ip', "what's", 'empty', 'lately', 'indeed', 'sm', 'strongly', 'yt', 'ax', 'dr', 'ae', 'fc', 'ih', 'fifth', 'abst', 
 'see', 'http', 'whose', 'quite', 'n', 'look', 'ex', 'follows']
+'''
 
 def convert_to_lowercase(sentence):
     lowercase = sentence.lower()

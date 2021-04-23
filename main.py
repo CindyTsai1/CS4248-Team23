@@ -7,7 +7,7 @@ import numpy as np
 from numpy.core.numeric import True_
 import pandas as pd
 import scipy as sp
-# from pycontractions import Contractions
+from pycontractions import Contractions
 from sklearn.metrics import f1_score, make_scorer, balanced_accuracy_score
 from sklearn.model_selection import train_test_split
 from sklearn.feature_extraction.text import CountVectorizer, TfidfVectorizer
@@ -17,18 +17,18 @@ from copy import deepcopy
 from imblearn.metrics import macro_averaged_mean_absolute_error
 import string
 import spacy
-# from autocorrect import Speller
+from autocorrect import Speller
 
 from features.bow import bow_feature
 from features.ngram import ngram_feature
 from features.word_embeddings import word_embeddings_feature
 from features.singlish import singlish_feature
 from features.bert_embeddings import bert_embeddings_feature
-# from preprocessing.correct_spelling import correct_spelling_preprocessing
-#from preprocessing.expand_contraction import expand_contraction_preprocessing
+from preprocessing.correct_spelling import correct_spelling_preprocessing
+from preprocessing.expand_contraction import expand_contraction_preprocessing
 from preprocessing.expand_short_form_words import expand_short_form_preprocessing
 from preprocessing.lemmatization import lemmatization_preprocessing
-# from preprocessing.preprocessingFunctions import convert_to_lowercase, stopwords_removal
+from preprocessing.preprocessingFunctions import convert_to_lowercase, stopwords_removal
 from preprocessing.remove_digit import remove_digit_preprocessing
 from preprocessing.remove_link import remove_link_preprocessing
 from preprocessing.remove_newline import remove_newline_preprocessing
@@ -45,11 +45,11 @@ num_classes: int = 5 # 5 levels of negativity
 
 # models - set only one of it to true
 naive_bayes: bool = False # True # False
-logistic: bool = True
-neural_network: bool = False
+logistic: bool = False
+neural_network: bool = True
 
 if preprocessing_not_done:
-    # cont: Contractions = Contractions('/Users/yuwen/Desktop/NUS/Year5Sem2/CS4248/Project/GoogleNews-vectors-negative300.bin.gz')
+    cont: Contractions = Contractions('/Users/yuwen/Desktop/NUS/Year5Sem2/CS4248/Project/GoogleNews-vectors-negative300.bin.gz')
     with open('/Users/yuwen/Desktop/NUS/Year5Sem2/CS4248/Project/CS4248-Team23/preprocessing/slang.txt', 'r') as myCSVfile:
         short_form_dict:dict = dict([pair for pair in csv.reader(myCSVfile, delimiter="=")])
     regex = compile('[%s]' % escape(string.punctuation+"“”‘’"))
@@ -82,16 +82,16 @@ def preprocessing(sentence: str, flags: list):
     if lowercased:
         sentence = convert_to_lowercase(sentence)
 
-    # if expand_contraction:
-    #     sentence = expand_contraction_preprocessing(sentence, cont)
+    if expand_contraction:
+        sentence = expand_contraction_preprocessing(sentence, cont)
     
-    # if remove_punctuation:
-    #     tokens:list = [t for word in sentence.split() for t in split(regex, word)]
-    #     if remove_stopwords:
-    #         tokens = stopwords_removal(tokens)
-    #     sentence = ' '.join(tokens)
-    # elif remove_stopwords:
-    #     sentence = ' '.join(stopwords_removal(sentence.split()))
+    if remove_punctuation:
+        tokens:list = [t for word in sentence.split() for t in split(regex, word)]
+        if remove_stopwords:
+            tokens = stopwords_removal(tokens)
+        sentence = ' '.join(tokens)
+    elif remove_stopwords:
+        sentence = ' '.join(stopwords_removal(sentence.split()))
         
     if remove_non_english:
         sentence = remove_non_english_preprocessing(sentence)
@@ -120,7 +120,6 @@ def feature_engineering(data: pd.DataFrame):
     n_gram_feature: bool = False
     '''
     singlish: bool = True
-    word_embedding: bool = False
     ''' 
     Format:
     from features.ngram import ngram_feature
@@ -133,10 +132,6 @@ def feature_engineering(data: pd.DataFrame):
 
     if singlish:
         features = pd.concat([features, singlish_feature(data['text']).rename('singlish_negativity')], axis=1)
-
-    elif word_embedding:
-        X_train_word_embedding = word_embeddings_feature(data['text'])
-        features = sp.sparse.hstack((X_train_word_embedding, features))
 
     return features
 
@@ -161,8 +156,7 @@ def feature_engineering2(X_train: pd.DataFrame, X_validation: pd.DataFrame, X_te
 
 def train_model(model, train_features: pd.DataFrame, validation_features: pd.DataFrame, train_label: pd.Series, validation_label:pd.Series):
     '''
-    Flags to be written here
-    n_gram_model: bool = False
+    Flags to be written at the top as global variables
     '''
     ''' 
     Format:
@@ -179,7 +173,6 @@ def train_model(model, train_features: pd.DataFrame, validation_features: pd.Dat
         model = MultinomialNB().fit(train_features, train_label)
     elif logistic:
         print("logistic regression")
-        # model = LogisticRegression().fit(train_features, train_label) # simple testing (checking that embedding code works)
         model = logistic_regression(train_features, train_label, f1_scorer)
     elif neural_network:
         print("neural network")
@@ -209,12 +202,11 @@ def scoring(train_or_test, y_label, y_pred):
 
 def main():
     '''
-    If loading processsed data v6_remove_punctuation_remove_non_english_correct_spelling_replace_short_form_slang.csv, set preprocessing_not_done to False
+    If loading processsed data v6_remove_punctuation_remove_non_english_correct_spelling_replace_short_form_slang_remove_stopwords.csv, set preprocessing_not_done to False
     If loading feature csv, set feature_extraction to False and change the loaded feature file name
     If training model, set model_training to True
     '''
-    # old_train: pd.DataFrame = pd.read_csv('data/v7_expand_contraction_remove_punctuation_remove_non_english_correct_spelling_replace_short_form_slang_lemmatization1.csv')
-    old_train: pd.DataFrame = pd.read_csv('data/v6_remove_punctuation_remove_non_english_correct_spelling_replace_short_form_slang.csv')
+    old_train: pd.DataFrame = pd.read_csv('data/v6_remove_punctuation_remove_non_english_correct_spelling_replace_short_form_slang_remove_stopwords.csv')
     
     old_train = old_train.dropna(axis = 0, subset=['text'], inplace=False)
     label: pd.Series = old_train['label']
@@ -224,10 +216,10 @@ def main():
     if preprocessing_not_done:
         flag_names: list = ["lowercased","expand_contraction","remove_punctuation","remove_stopwords",
             "remove_non_english","remove_digit","correct_spelling","replace_short_form_slang","lemmatization"]
-        # cont.load_models()
+        cont.load_models()
         print("loaded contraction model")
         scores: pd.DataFrame = pd.DataFrame(
-            pd.read_csv('preprocessing/scores1.csv'), 
+            pd.read_csv('preprocessing/scores.csv'), 
             columns=flag_names+["train_f1_score","train_MAE","train_acc","test_f1_score","test_MAE","test_acc"]
         )
         flags = [False,False,True,True,True,False,True,True,True]
@@ -235,15 +227,17 @@ def main():
         print("start preprocessing")
         train['text'] = old_train['text'].copy()
         train['text'] = train['text'].apply(preprocessing, args=(flags,))
-        filename = "data/v7_" + '_'.join(filter(lambda a: flags[flag_names.index(a)], flag_names)) + ".csv"
+        filename = "data/v6_" + '_'.join(filter(lambda a: flags[flag_names.index(a)], flag_names)) + ".csv"
         train.to_csv(filename, index=False)
         print("stored preprocessing")
         
     # feature extraction before splitting of data
     if feature_extraction:
         print("start feature extraction part 1 (before splitting of data)")
+        # change flags in feature_engineering to decide on the feature to extract
         train_features: pd.DataFrame = feature_engineering(train)
-        train_features.to_csv('features/singlish_negativity1.csv', index=False) # take note of overwriting ~ 
+        # remember to change the file name for the feature extracted
+        train_features.to_csv('features/singlish_negativity.csv', index=False) # take note of overwriting ~ 
 
         # add 'text' col to train_features for bow/tfidf in feature extraction part II
         train_features = pd.concat([train_features, train['text']], axis=1)
@@ -251,14 +245,9 @@ def main():
     else: 
         print("no feature extraction part 1")
         train_features = pd.DataFrame(train['text'])
-        # train_features: pd.DataFrame = pd.read_csv('features/singlish_negativity.csv')
-        
-        # uncomment and repeat the following row to input multiple feature files and concatenate the features into one dataframe
-        # train_features = pd.concat([train_features, pd.read_csv('features/<your feature name>.csv')], axis=1)
-
-
+        ## uncomment to include features extracted previously
         ## -- uncomment to include Singlish Negativity  --
-        train_features = pd.concat([train_features.reset_index(drop=True), pd.read_csv('features/singlish_negativity.csv').reset_index(drop=True)], axis=1)
+        # train_features = pd.concat([train_features.reset_index(drop=True), pd.read_csv('features/singlish_negativity.csv').reset_index(drop=True)], axis=1)
 
         ## -- uncomment to include question_mark  --
         # train_features = pd.concat([train_features, pd.read_csv('features/question_mark_count.csv')], axis=1)
@@ -311,7 +300,6 @@ def main():
     if model_training:
         # The following was used when reloading the model to further train
         # model = load_model('my_model')
-        # GoEmotions pre-trained model can be imported here
         model = None
         model = train_model(model, train_features, validation_features, train_label, validation_label)
         
@@ -327,6 +315,7 @@ def main():
         test_metrics = scoring('test', test_label, y_pred)
         print(test_metrics.values())
         
+        ## uncomment when testing and storing the perfomance of different pre-processing methods
         # row: dict = dict(zip(flag_names, flags))
         # scores = scores.append({**row,**train_metrics,**test_metrics}, ignore_index=True)
         # scores.to_csv('preprocessing/scores1.csv', index=False)
@@ -334,4 +323,3 @@ def main():
 # Allow the main class to be invoked if run as a file.
 if __name__ == "__main__":
     main()
-    # print(preprocessing(" do not chase after who you like  If you are meant to be together  You Will  This is what most of us have been told by friends or family after they themselves have been through the hardship  But you know what  this just does not make sense lol  I have personally seen and know many friends who are self aware of themselves and tried their utmost best to improve themselves in many way possibles and yet still unable to get any form of romantic love  The thing is  more often than not  these guys girls literally have to do the chasing first in order for them to secure themselves a relationship  Stop telling us that love need not be chased and if 2 people truly like each other  they will come to be together  This is utter nonsense imo lol  Go out there and chase for who you like  just like how you would chase for your dream jobs or passion etcc     ", [False,True,True,False,True,False,True,True,True]))
