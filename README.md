@@ -8,6 +8,7 @@
     - [3.4 Model Training](#3.4-Model-Training)
     - [7.2 Topic modeling](#7.2-Topic-modeling)
 - [Project poster](#Project-poster)
+- [Requirement (Dependencies)](#Requirement-(Dependencies))
 
 
 #### Instructions on how to use our code to perform sentiment analysis on NUSWhispers can be found from comments in CS4248-Team23/main.py 
@@ -102,3 +103,32 @@
 
 ## Project poster
 ![image](Group23_Project_Poster.png)
+
+## Requirement (Dependencies)
+- numpy
+- pandas
+- scipy
+- pycontractions
+    - JAVA JDK 1.8 (Cannot run on newest version)
+    - Download `GoogleNews-vectors-negative300.bin`
+- sklearn
+- imblearn
+- spacy
+- autocorrect
+- nltk
+- keras
+- matplotlib.pyplot
+- gensim
+- wordcloud
+- pyLDAvis
+- operator
+- transformers
+- torch
+- datasets
+- glob
+- seaborn
+- IPython
+- textblob
+- collections
+- glob
+- plotly
